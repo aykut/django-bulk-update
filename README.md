@@ -1,2 +1,53 @@
-django-bulk-update-with-postgresql
+django-bulk-update
 ==================================
+
+Simple bulk update over Django ORM or with helper function.
+
+Usage
+==================================
+With helper:
+
+    from bulk_update.helper import bulk_update
+
+    random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
+    people = Person.objects.all()
+    for person in people:
+      r = random.randrange(4)
+      person.name = random_names[r]
+
+    bulk_update(people, update_fields=['name'])  # updates only name column
+    bulk_update(people, exclude_fields=['username'])  # updates all columns except username 
+    bulk_update(people, using='someotherdb')  # updates all columns using the given db
+    bulk_update(people)  # updates all columns using the default db
+
+
+With manager:
+
+    from bulk_update.manager import BulkUpdateManager
+
+    class PersonManager(BulkUpdateManager):
+        pass
+        
+    class Person(models.Model):
+        ...
+        objects = PersonManager()
+        
+    random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
+    people = Person.objects.all()
+    for person in people:
+      r = random.randrange(4)
+      person.name = random_names[r]
+      
+    Person.objects.bulk_update(people)
+
+Installation
+==================================
+    
+
+Requirements
+==================================
+Django 1.2+
+
+TODO
+==================================
+- Add batch_size option.
