@@ -5,6 +5,10 @@ Simple bulk update over Django ORM or with helper function.
 
 This project aims to bulk update given objects using **one query** over **Django ORM**.
 
+Installation
+==================================
+    pip install django-bulk-update
+
 Usage
 ==================================
 With manager:
@@ -43,10 +47,6 @@ With helper:
     bulk_update(people, exclude_fields=['username'])  # updates all columns except username 
     bulk_update(people, using='someotherdb')  # updates all columns using the given db
     bulk_update(people)  # updates all columns using the default db
-
-Installation
-==================================
-    pip install django-bulk-update
 
 Requirements
 ==================================
