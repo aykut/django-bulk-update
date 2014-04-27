@@ -15,12 +15,9 @@ With manager:
 
     from bulk_update.manager import BulkUpdateManager
 
-    class PersonManager(BulkUpdateManager):
-        pass
-        
     class Person(models.Model):
         ...
-        objects = PersonManager()
+        objects = BulkUpdateManager()
         
     random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
     people = Person.objects.all()
@@ -50,7 +47,7 @@ With helper:
 
 Requirements
 ==================================
-Django 1.2+
+- Django 1.2+
 
 TODO
 ==================================
