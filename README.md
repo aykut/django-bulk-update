@@ -3,6 +3,8 @@ django-bulk-update
 
 Simple bulk update over Django ORM or with helper function.
 
+This project aims to bulk update given objects over **one query** with **Django ORM**.
+
 Usage
 ==================================
 With helper:
