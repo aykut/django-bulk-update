@@ -43,7 +43,7 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
     values, paramaters = _construct_cases(update_clauses, pkcolumn)
     paramaters.extend([tuple(pks)])
 
-    sql = "UPDATE %(dbtale)s SET %(values)s WHERE %(pkcolumn)s" % {
+    sql = "UPDATE %(dbtable)s SET %(values)s WHERE %(pkcolumn)s" % {
         'dbtable': dbtable, 'values': values, 'pkcolumn': pkcolumn}
     sql += " in %s"
 
