@@ -1,5 +1,5 @@
 from django.db import models
-from . import bulk_update
+from .helper import bulk_update
 
 
 class BulkUpdateManager(models.Manager):
