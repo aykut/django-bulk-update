@@ -23,8 +23,10 @@ With manager:
     for person in people:
       r = random.randrange(4)
       person.name = random_names[r]
-      
-    Person.objects.bulk_update(people)
+
+    Person.objects.bulk_update(people, update_fields=['name'])  # updates only name column
+    Person.objects.bulk_update(people, exclude_fields=['username'])  # updates all columns except username
+    Person.objects.bulk_update(people)  # updates all columns
 
 
 With helper:
