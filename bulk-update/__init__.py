@@ -11,6 +11,7 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
 
     ref_obj = objs[0]
     meta = ref_obj._meta
+    exclude_fields = exclude_fields or []
     update_fields = update_fields or meta.get_all_field_names()
     fields = filter(
         lambda f: not isinstance(f, AutoField) and f.attname in update_fields,
