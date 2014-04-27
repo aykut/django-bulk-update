@@ -46,7 +46,7 @@ With helper:
 
 Installation
 ==================================
-    
+    pip install django-bulk-update
 
 Requirements
 ==================================
