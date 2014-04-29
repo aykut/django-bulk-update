@@ -18,29 +18,25 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
         meta.fields)
     fields = filter(lambda f: not f.attname in exclude_fields, fields)
 
-    def _construct_cases(update_clauses, pkcolumn):
-        sql = ""
-        paramaters = []
-        for field_column, cases in update_clauses.items():
-            sql += "%s = (CASE %s" % (field_column, pkcolumn)
-            for pk, value in cases.items():
-                sql += " WHEN %s THEN %s"
-                paramaters.extend([pk, value])
-            sql += " END), "
-        return sql.rstrip(', '), paramaters
-
     pks = []
+    paramaters = []
     connection = connections[using]
-    update_clauses = defaultdict(dict)
+    case_clauses = defaultdict(str)
     for obj in objs:
         pks.append(obj.pk)
         for field in fields:
-            field_value = getattr(obj, field.attname)
-            update_clauses[field.column].update({obj.pk: field_value})
+            default = case_clauses.setdefault(
+                field.column, '{column} = (CASE {pkcolumn} {{when}}'.format(
+                    column=field.column, pkcolumn=meta.pk.column))
+            case_clauses[field.column] = default.format(
+                when="WHEN %s THEN %s {when}")
+            paramaters.extend([obj.pk, getattr(obj, field.attname)])
+
+    values = ', '.join(
+        map(lambda x: x.format(when=' END)'), case_clauses.values()))
 
     pkcolumn = meta.pk.column
     dbtable = meta.db_table
-    values, paramaters = _construct_cases(update_clauses, pkcolumn)
     paramaters.extend([tuple(pks)])
 
     sql = "UPDATE %(dbtable)s SET %(values)s WHERE %(pkcolumn)s" % {
