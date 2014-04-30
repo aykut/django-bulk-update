@@ -8,7 +8,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='django-bulk-update',
-    version='0.1.1',
+    version='0.2',
     packages=find_packages(),
     include_package_data=True,
     description='Bulk update for django.',
