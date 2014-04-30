@@ -11,7 +11,7 @@ setup(
     version='0.2',
     packages=find_packages(),
     include_package_data=True,
-    description='Bulk update for django.',
+    description='Bulk update using one query over Django ORM.',
     long_description=README,
     url='https://github.com/aykut/django-bulk-update',
     author='Aykut Ozat',
