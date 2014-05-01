@@ -51,4 +51,5 @@ Requirements
 
 TODO
 ==================================
-- Add batch_size option.
+- UnitTests
+- Performance Tests
