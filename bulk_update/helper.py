@@ -8,8 +8,6 @@ from django.utils.functional import SimpleLazyObject
 def bulk_update(objs, update_fields=None, exclude_fields=None,
                 using='default', batch_size=None):
     assert batch_size is None or batch_size > 0
-    if not objs:
-        return
 
     batch_size = batch_size or len(objs)
 
@@ -23,23 +21,26 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
     fields = filter(lambda f: not f.attname in exclude_fields, fields)
 
     pks = []
-    paramaters = []
     connection = connections[using]
-    case_clauses = defaultdict(str)
+    case_clauses = defaultdict(dict)
     for obj in objs:
         pks.append(obj.pk)
         for field in fields:
+            column = field.column
             _default = SimpleLazyObject(
                 lambda: '{column} = (CASE {pkcolumn} {{when}}'.format(
-                    column=field.column, pkcolumn=meta.pk.column))
+                    column=column, pkcolumn=meta.pk.column))
 
-            _tail = case_clauses.setdefault(field.column, _default)
-            case_clauses[field.column] = _tail.format(
-                when="WHEN %s THEN %s {when}")
-            paramaters.extend([obj.pk, getattr(obj, field.attname)])
+            case_clauses.setdefault(column, {'sql': _default, 'params': []})
+
+            case_clauses[column]['sql'] = case_clauses[column]['sql']\
+                .format(when="WHEN %s THEN %s {when}")
+            case_clauses[column]['params'].extend(
+                [obj.pk, getattr(obj, field.attname)])
 
     values = ', '.join(
-        map(lambda v: v.format(when=' END)'), case_clauses.values()))
+        map(lambda v: v['sql'].format(when=' END)'), case_clauses.values()))
+    paramaters = [item for v in case_clauses.values() for item in v['params']]
     del case_clauses
 
     pkcolumn = meta.pk.column
