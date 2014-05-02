@@ -28,6 +28,7 @@ With manager:
     Person.objects.bulk_update(people, update_fields=['name'])  # updates only name column
     Person.objects.bulk_update(people, exclude_fields=['username'])  # updates all columns except username
     Person.objects.bulk_update(people)  # updates all columns
+    Person.objects.bulk_update(people, batch_size=50000)  # updates all columns by 50000 sized chunks
 
 
 With helper:
@@ -44,6 +45,7 @@ With helper:
     bulk_update(people, exclude_fields=['username'])  # updates all columns except username 
     bulk_update(people, using='someotherdb')  # updates all columns using the given db
     bulk_update(people)  # updates all columns using the default db
+    bulk_update(people, batch_size=50000)  # updates all columns by 50000 sized chunks using the default db
 
 Requirements
 ==================================
