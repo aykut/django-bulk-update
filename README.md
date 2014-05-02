@@ -55,7 +55,7 @@ Performance Tests:
     ids=list(Person.objects.values_list('id', flat=True)[:1000])
     from django.db.models import F
     people=Person.objects.filter(id__in=ids)
-    dj_update = lambda: People.update(name=F('name'), surname=F('surname'))
+    dj_update = lambda: people.update(name=F('name'), surname=F('surname'))
     '''
     >> import timeit
     >> print min(timeit.Timer('dj_update()', setup=setup).repeat(7, 100))
