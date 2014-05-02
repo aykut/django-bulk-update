@@ -1,7 +1,8 @@
 from collections import defaultdict
 
 from django.db import connections
-from django.db.models.fields import AutoField
+from django.db.models.fields import (
+    AutoField, GenericIPAddressField, IPAddressField)
 from django.utils.functional import SimpleLazyObject
 
 
@@ -34,8 +35,12 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
                 case_clauses.setdefault(
                     column, {'sql': _default, 'params': []})
 
-                case_clauses[column]['sql'] = case_clauses[column]['sql']\
-                    .format(when="WHEN %s THEN %s {when}")
+                if isinstance(field, (GenericIPAddressField, IPAddressField)):
+                    case_clauses[column]['sql'] = case_clauses[column]['sql']\
+                        .format(when="WHEN %s THEN %s::inet {when}")
+                else:
+                    case_clauses[column]['sql'] = case_clauses[column]['sql']\
+                        .format(when="WHEN %s THEN %s {when}")
                 case_clauses[column]['params'].extend(
                     [obj.pk, getattr(obj, field.attname)])
 
