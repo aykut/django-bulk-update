@@ -1,3 +1,6 @@
+1.0.2
+- added performance tests
+
 1.0.1
 - GenericIPAddressField and IPAddressField fixes
 
