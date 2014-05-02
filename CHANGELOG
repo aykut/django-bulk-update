@@ -1,3 +1,6 @@
+1.0.1
+- GenericIPAddressField and IPAddressField fixes
+
 1.0.0
 - added batch_size option
 - performance improvements
