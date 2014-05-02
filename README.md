@@ -47,6 +47,48 @@ With helper:
     bulk_update(people)  # updates all columns using the default db
     bulk_update(people, batch_size=50000)  # updates all columns by 50000 sized chunks using the default db
 
+Performance Tests:
+==================================
+
+    setup='''
+    from test.person.models import Person
+    ids=list(Person.objects.values_list('id', flat=True)[:1000])
+    from django.db.models import F
+    people=Person.objects.filter(id__in=ids)
+    dj_update = lambda: People.update(name=F('name'), surname=F('surname'))
+    '''
+    >> import timeit
+    >> print min(timeit.Timer('dj_update()', setup=setup).repeat(7, 100))
+    >> 1.43143701553
+    
+    setup='''
+    from bulk_update import helper
+    from test.person.models import Person
+    ids=list(Person.objects.values_list('id', flat=True)[:1000])
+    people=Person.objects.filter(id__in=ids)
+    bu_update = lambda: helper.bulk_update(people, update_fields=['name', 'surname'])
+    '''
+    
+    >> import timeit
+    >> print min(timeit.Timer('bu_update()', setup=setup).repeat(7, 100))
+    >> 15.0784111023
+    
+    setup='''
+    from test.person.models import Person
+    from django.db.models import F
+    ids=list(Person.objects.values_list('id', flat=True)[:1000])
+    people=Person.objects.filter(id__in=ids)
+    def dmmy_update():
+        for p in people:
+            p.name = F('name')
+            p.surname = F('surname')
+            p.save(update_fields=['name', 'surname'])
+    '''
+    
+    >> import timeit
+    >> print min(timeit.Timer('dmmy_update()', setup=setup).repeat(7, 100))
+    >> 201.827591181
+
 Requirements
 ==================================
 - Django 1.2+
@@ -54,4 +96,3 @@ Requirements
 TODO
 ==================================
 - UnitTests
-- Performance Tests
