@@ -1,8 +1,7 @@
 from collections import defaultdict
 
 from django.db import connections
-from django.db.models.fields import (
-    AutoField, GenericIPAddressField, IPAddressField)
+from django.db.models.fields import AutoField
 from django.utils.functional import SimpleLazyObject
 
 
