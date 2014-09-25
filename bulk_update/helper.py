@@ -33,20 +33,19 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
                         column=column, pkcolumn=meta.pk.column))
 
                 case_clauses.setdefault(
-                    column, {'sql': _default, 'params': []})
+                    column, {'sql': _default,
+                             'params': [],
+                             'type': field.db_type(connection)})
 
-                if isinstance(field, (GenericIPAddressField, IPAddressField)):
-                    case_clauses[column]['sql'] = case_clauses[column]['sql']\
-                        .format(when="WHEN %s THEN %s::inet {when}")
-                else:
-                    case_clauses[column]['sql'] = case_clauses[column]['sql']\
+                case_clauses[column]['sql'] = case_clauses[column]['sql']\
                         .format(when="WHEN %s THEN %s {when}")
+   
                 case_clauses[column]['params'].extend(
                     [obj.pk, getattr(obj, field.attname)])
 
         if pks:
             values = ', '.join(
-                map(lambda v: v['sql'].format(when=' END)'),
+                map(lambda v: v['sql'].format(when=' END)::%s' % v['type']),
                     case_clauses.values()))
             paramaters = [item for v in case_clauses.values()
                           for item in v['params']]
