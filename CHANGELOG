@@ -1,3 +1,6 @@
+1.0.3
+- added support for ARRAY types and refactored GenericIPAddressField & IPAddressField.
+
 1.0.2
 - added performance tests
 
