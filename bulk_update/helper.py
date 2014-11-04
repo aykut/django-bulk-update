@@ -40,7 +40,7 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
                         .format(when="WHEN %s THEN %s {when}")
    
                 case_clauses[column]['params'].extend(
-                    [obj.pk, getattr(obj, field.attname)])
+                    [obj.pk, field.get_db_prep_value(getattr(obj, field.attname), connection)])
 
         if pks:
             values = ', '.join(
