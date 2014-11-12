@@ -28,7 +28,7 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
             for field in fields:
                 column = field.column
                 _default = SimpleLazyObject(
-                    lambda: '{column} = (CASE {pkcolumn} {{when}}'.format(
+                    lambda: '{column} = CAST(CASE {pkcolumn} {{when}}'.format(
                         column=column, pkcolumn=meta.pk.column))
 
                 case_clauses.setdefault(
@@ -44,7 +44,7 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
 
         if pks:
             values = ', '.join(
-                map(lambda v: v['sql'].format(when=' END)::%s' % v['type']),
+                map(lambda v: v['sql'].format(when=' END AS %s)' % v['type']),
                     case_clauses.values()))
             paramaters = [item for v in case_clauses.values()
                           for item in v['params']]
