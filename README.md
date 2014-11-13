@@ -93,6 +93,11 @@ Requirements
 ==================================
 - Django 1.2+
 
+Contributors
+==================================
+- [daleobrien](https://github.com/daleobrien)
+- [sruon](https://github.com/sruon)
+
 TODO
 ==================================
 - UnitTests
