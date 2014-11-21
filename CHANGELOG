@@ -1,3 +1,6 @@
+1.0.5
+- fixed PositiveIntegerField and PositiveSmallIntegerField issues at db_type
+
 1.0.4
 - Allow non-postgres databases to work too (daleobrien)
 - Allow the use of fields that requires pre-processing (sruon)
