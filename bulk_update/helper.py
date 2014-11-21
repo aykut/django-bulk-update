@@ -1,7 +1,6 @@
 from collections import defaultdict
 
-from django.db import connections
-from django.db.models.fields import AutoField
+from django.db import connections, models
 from django.utils.functional import SimpleLazyObject
 
 
@@ -16,11 +15,18 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
     exclude_fields = exclude_fields or []
     update_fields = update_fields or meta.get_all_field_names()
     fields = filter(
-        lambda f: not isinstance(f, AutoField) and f.attname in update_fields,
+        lambda f: (not isinstance(f, models.AutoField)) and
+                  (f.attname in update_fields),
         meta.fields)
     fields = filter(lambda f: not f.attname in exclude_fields, fields)
 
     def _batched_update(objs, fields, batch_size, connection):
+        def _get_db_type(field):
+            if isinstance(field, (models.PositiveSmallIntegerField,
+                                  models.PositiveIntegerField)):
+                return field.db_type(connection).split(' ', 1)[0]
+            return field.db_type(connection)
+
         pks = []
         case_clauses = defaultdict(dict)
         for obj in objs[:batch_size]:
@@ -32,9 +38,12 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
                         column=column, pkcolumn=meta.pk.column))
 
                 case_clauses.setdefault(
-                    column, {'sql': _default,
-                             'params': [],
-                             'type': field.db_type(connection)})
+                    column, {
+                        'sql': _default,
+                        'params': [],
+                        'type': _get_db_type(field)
+                    }
+                )
 
                 case_clauses[column]['sql'] = case_clauses[column]['sql']\
                     .format(when="WHEN %s THEN %s {when}")
