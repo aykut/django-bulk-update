@@ -14,11 +14,11 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
     meta = ref_obj._meta
     exclude_fields = exclude_fields or []
     update_fields = update_fields or meta.get_all_field_names()
-    fields = filter(
+    fields = list(filter(
         lambda f: (not isinstance(f, models.AutoField)) and
                   (f.attname in update_fields),
-        meta.fields)
-    fields = filter(lambda f: not f.attname in exclude_fields, fields)
+        meta.fields))
+    fields = list(filter(lambda f: not f.attname in exclude_fields, fields))
 
     def _batched_update(objs, fields, batch_size, connection):
         def _get_db_type(field):
