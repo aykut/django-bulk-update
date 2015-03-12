@@ -25,6 +25,8 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
             if isinstance(field, (models.PositiveSmallIntegerField,
                                   models.PositiveIntegerField)):
                 return field.db_type(connection).split(' ', 1)[0]
+            elif isinstance(field, (models.DateTimeField, models.DateField)) and connection.vendor == 'sqlite':
+                return 'text' # otherwise it turns 2015-03-10 to 2015
             return field.db_type(connection)
 
         pks = []
