@@ -33,6 +33,8 @@ def grouper(iterable, size):
 
 def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 using='default', batch_size=None):
+    assert batch_size is None or batch_size > 0
+    batch_size = batch_size or len(objs)
 
     connection = connections[using]
     if meta is None:
@@ -116,7 +118,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
             pkcolumn = meta.pk.column
             dbtable = meta.db_table
-            # Storytime: apparently (at least for mysql), if a
+            # Storytime: apparently (at least for mysql and sqlite), if a
             # non-simple parameter is added (e.g. a tuple), it is
             # processed with force_text and, accidentally, manages to
             # be a valid syntax... unless there's only one element.
