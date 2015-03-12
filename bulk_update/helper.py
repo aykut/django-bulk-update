@@ -19,7 +19,7 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
                   (f.attname in update_fields),
         meta.fields))
     fields = list(filter(lambda f: not f.attname in exclude_fields, fields))
-
+	
     def _batched_update(objs, fields, batch_size, connection):
         def _get_db_type(field):
             if isinstance(field, (models.PositiveSmallIntegerField,
@@ -56,19 +56,19 @@ def bulk_update(objs, update_fields=None, exclude_fields=None,
             values = ', '.join(
                 map(lambda v: v['sql'].format(when=' END AS %s)' % v['type']),
                     case_clauses.values()))
-            paramaters = [item for v in case_clauses.values()
+            parameters = [item for v in case_clauses.values()
                           for item in v['params']]
             del case_clauses
 
             pkcolumn = meta.pk.column
             dbtable = meta.db_table
-            paramaters.extend([tuple(pks)])
+            parameters.extend(pks)
 
-            sql = 'UPDATE {dbtable} SET {values} WHERE {pkcolumn} in %s'\
-                .format(dbtable=dbtable, values=values, pkcolumn=pkcolumn)
+            sql = 'UPDATE {dbtable} SET {values} WHERE {pkcolumn} in ({inclause})'\
+                .format(dbtable=dbtable, values=values, pkcolumn=pkcolumn, inclause=','.join([' %s'] * len(pks) ))
             del values, pks
 
-            connection.cursor().execute(sql, paramaters)
+            connection.cursor().execute(sql, parameters)
 
             _batched_update(objs[batch_size:], fields, batch_size, connection)
 
