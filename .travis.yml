@@ -20,10 +20,10 @@ before_script:
     fi"
 
 install:
-  - pip install -q -r "test_requirements/django-$DJANGO.txt"
+  - pip install -q -r "tests/requirements/django-$DJANGO.txt"
   - if [ $DATABASE_URL == 'postgres://postgres@127.0.0.1/django_bulk_update_test' ]; then pip
     install -q psycopg2 ; fi
   - if [ $DATABASE_URL == 'mysql://root@127.0.0.1/django_bulk_update_test' ]; then pip install
-    -q mysql-python ; fi
+    -q mysqlclient ; fi
 
 script: python runtest.py
