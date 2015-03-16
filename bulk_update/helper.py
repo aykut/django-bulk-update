@@ -11,7 +11,7 @@ from django.db import connections, models
 def _get_db_type(field, connection):
     if isinstance(field, (models.PositiveSmallIntegerField,
                           models.PositiveIntegerField)):
-        # ???
+        # integer CHECK ("points" >= 0)'
         return field.db_type(connection).split(' ', 1)[0]
 
     res = field.db_type(connection)
@@ -57,9 +57,10 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     # types well enough... hopefully.
     # http://dev.mysql.com/doc/refman/5.5/en/cast-functions.html#function_cast
     #
-    # Sqlite also gives some trouble with cast, at least for datetime, 
+    # Sqlite also gives some trouble with cast, at least for datetime,
     # but is also permissive for uncast values
-    use_cast = 'mysql' not in connection.vendor and 'sqlite' not in connection.vendor 
+    vendor = connection.vendor
+    use_cast = 'mysql' not in vendor and 'sqlite' not in connection.vendor
     if use_cast:
         case_clause_template = '{column} = CAST(CASE {pkcolumn} {{when}}'
         tail_end_template = ' END AS {type})'
@@ -68,14 +69,10 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         tail_end_template = ' END)'
 
     for objs_batch in grouper(objs, batch_size):
-
         pks = []
         case_clauses = {}
-
         for obj in objs_batch:
-
             pks.append(obj.pk)
-
             for field in fields:
                 column = field.column
 
@@ -97,8 +94,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                     case_clauses[column] = case_clause
 
                 case_clause['sql'] = (
-                    case_clause['sql']
-                    .format(when="WHEN %s THEN %s {when}"))
+                    case_clause['sql'].format(when="WHEN %s THEN %s {when}")
+                )
 
                 case_clause['params'].extend(
                     [obj.pk,
@@ -128,7 +125,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             parameters.extend(pks)
 
             sql = (
-                'UPDATE {dbtable} SET {values} WHERE {pkcolumn} in {in_clause_sql}'
+                'UPDATE {dbtable} SET {values} WHERE {pkcolumn} '
+                'in {in_clause_sql}'
                 .format(
                     dbtable=dbtable, values=values, pkcolumn=pkcolumn,
                     in_clause_sql=in_clause_sql))
