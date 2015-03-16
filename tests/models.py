@@ -15,10 +15,19 @@ class Person(models.Model):
     positive_small_age = models.PositiveSmallIntegerField()
     small_age = models.SmallIntegerField()
 
-    name = models.fields.CharField(max_length=140, blank=True, null=True)
-    height = models.DecimalField(max_digits=3, decimal_places=2)
+    # booleans
+    certified = models.BooleanField()
+    null_certified = models.NullBooleanField()
+
+    # chars
+    name = models.CharField(max_length=140, blank=True, null=True)
     email = models.EmailField()
-    certified = models.NullBooleanField()
+    file_path = models.FilePathField()
+    slug = models.SlugField()
+    text = models.TextField()
+    url = models.URLField()
+
+    height = models.DecimalField(max_digits=3, decimal_places=2)
     created = models.fields.DateTimeField(blank=True, null=True)
 
     objects = BulkUpdateManager()
