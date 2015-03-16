@@ -98,7 +98,11 @@ Contributors
 - [aykut](https://github.com/aykut)
 - [daleobrien](https://github.com/daleobrien)
 - [sruon](https://github.com/sruon)
+- [HowerHell](https://github.com/HoverHell)
+- [c-nichols](https://github.com/c-nichols)
+- [towr](https://github.com/towr)
 
 TODO
 ==================================
-- UnitTests
+- Tests for every types of model fields, even for a few custom fields.
+- Geometry Fields support
