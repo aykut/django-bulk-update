@@ -10,8 +10,14 @@ env:
     - DJANGO=1.7 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
     - DJANGO=1.7 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
     - DJANGO=1.6 DATABASE_URL='sqlite://localhost/:memory:'
+    - DJANGO=1.6 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.6 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
     - DJANGO=1.5 DATABASE_URL='sqlite://localhost/:memory:'
+    - DJANGO=1.5 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.5 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
     - DJANGO=1.4 DATABASE_URL='sqlite://localhost/:memory:'
+    - DJANGO=1.4 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.4 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
 
 before_script:
   - sh -c "if [ '$DATABASE_URL' = 'postgres://postgres@127.0.0.1/django_bulk_update_test' ];
@@ -35,3 +41,7 @@ matrix:
   exclude:
     - python: 3.4
       env: DJANGO=1.4 DATABASE_URL='sqlite://localhost/:memory:'
+    - python: 3.4
+      env: DJANGO=1.4 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - python: 3.4
+      env: DJANGO=1.4 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
