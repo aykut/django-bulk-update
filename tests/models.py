@@ -16,7 +16,7 @@ class Person(models.Model):
     small_age = models.SmallIntegerField()
 
     # booleans
-    certified = models.BooleanField()
+    certified = models.BooleanField(default=False)
     null_certified = models.NullBooleanField()
 
     # chars
