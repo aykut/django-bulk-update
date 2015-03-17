@@ -29,13 +29,16 @@ before_script:
     fi"
 
 install:
-  - pip install -q -r "tests/requirements/django-$DJANGO.txt"
+  - pip install -q -r "tests/requirements/django-$DJANGO.txt" && pip install coveralls
   - if [ $DATABASE_URL == 'postgres://postgres@127.0.0.1/django_bulk_update_test' ]; then pip
     install -q psycopg2 ; fi
   - if [ $DATABASE_URL == 'mysql://root@127.0.0.1/django_bulk_update_test' ]; then pip install
     -q mysqlclient ; fi
 
-script: python runtest.py
+script: coverage run --source=bulk_update --omit='bulk_update/tests*' runtests.py
+
+after_success:
+  if [[ $COVERALLS_REPO_TOKEN ]]; then coveralls; fi
 
 matrix:
   exclude:
