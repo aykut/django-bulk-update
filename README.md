@@ -1,7 +1,7 @@
 django-bulk-update
 ==================================
 [![Build Status](https://travis-ci.org/aykut/django-bulk-update.svg?branch=master)](https://travis-ci.org/aykut/django-bulk-update)
-[![Coverage Status](https://coveralls.io/repos/aykut/django-bulk-update/badge.svg)](https://coveralls.io/r/aykut/django-bulk-update)
+[![Coverage Status](https://coveralls.io/repos/aykut/django-bulk-update/badge.svg?branch=master)](https://coveralls.io/r/aykut/django-bulk-update?branch=master)
 
 Simple bulk update over Django ORM or with helper function.
 
