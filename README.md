@@ -1,5 +1,6 @@
 django-bulk-update
 ==================================
+[![Build Status](https://travis-ci.org/aykut/django-bulk-update.svg?branch=master)](https://travis-ci.org/aykut/django-bulk-update)
 
 Simple bulk update over Django ORM or with helper function.
 
