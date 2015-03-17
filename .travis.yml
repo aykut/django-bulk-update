@@ -35,7 +35,7 @@ install:
   - if [ $DATABASE_URL == 'mysql://root@127.0.0.1/django_bulk_update_test' ]; then pip install
     -q mysqlclient ; fi
 
-script: coverage run --source=bulk_update --omit='bulk_update/tests*' runtests.py
+script: coverage run --source=bulk_update --omit='bulk_update/tests*' runtest.py
 
 after_success:
   if [[ $COVERALLS_REPO_TOKEN ]]; then coveralls; fi
