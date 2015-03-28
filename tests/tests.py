@@ -25,7 +25,7 @@ class BulkUpdateTests(TestCase):
                 'height': Decimal('1.81'), 'date_time': self.now,
                 'date': self.date, 'time': self.time, 'float_height': 0.3,
                 'remote_addr': '192.0.2.30', 'my_file': 'dummy.txt',
-                'image': 'kitten.jpg',
+                'image': 'kitten.jpg', 'data': {'name': 'Mike', 'age': -99},
             },
             {
                 'big_age': 245999992349999, 'comma_separated_age': '6,2,9',
@@ -37,6 +37,7 @@ class BulkUpdateTests(TestCase):
                 'date_time': self.now, 'date': self.date, 'time': self.time,
                 'float_height': 0.5 + 0.3, 'remote_addr': '127.0.0.1',
                 'my_file': 'fixtures.json',
+                'data': [{'name': 'Pete'}, {'name': 'Mike'}],
             },
             {
                 'big_age': 9929992349999, 'comma_separated_age': '6,2,9,10,5',
@@ -48,6 +49,7 @@ class BulkUpdateTests(TestCase):
                 'height': Decimal('1.78'), 'date_time': self.now,
                 'date': self.date, 'time': self.time,
                 'float_height': 0.8 + 0.9, 'my_file': 'dummy.png',
+                'data': {'text': 'bla bla bla', 'names': ['Mike', 'Pete']},
             },
             {
                 'big_age': 9992349234, 'comma_separated_age': '12,29,10,5',
@@ -59,6 +61,7 @@ class BulkUpdateTests(TestCase):
                 'height': Decimal('1.65'), 'date_time': self.now,
                 'date': self.date, 'time': self.time, 'float_height': 0,
                 'remote_addr': '2a02:42fe::4',
+                'data': {'names': {'name': 'Mary'}},
             },
             {
                 'big_age': 999234, 'comma_separated_age': '12,1,30,50',
@@ -69,7 +72,7 @@ class BulkUpdateTests(TestCase):
                 'text': 'this is a dummy text', 'url': 'google.com',
                 'height': Decimal('1.59'), 'date_time': self.now,
                 'date': self.date, 'time': self.time, 'float_height': 2 ** 2,
-                'image': 'dummy.jpeg',
+                'image': 'dummy.jpeg', 'data': {},
             },
             {
                 'big_age': 9999999999, 'comma_separated_age': '1,100,3,5',
@@ -80,7 +83,7 @@ class BulkUpdateTests(TestCase):
                 'text': 'dummy text', 'url': 'docs.djangoproject.com',
                 'height': Decimal('1.71'), 'date_time': self.now,
                 'date': self.date, 'time': self.time, 'float_height': 2 ** 100,
-                'image': 'dummy.png',
+                'image': 'dummy.png', 'data': [],
             },
         ])
 
@@ -320,8 +323,9 @@ class BulkUpdateTests(TestCase):
         remote_addrs = ['127.0.0.1', '192.0.2.30', '2a02:42fe::4']
         values = {}
         for idx, person in enumerate(people):
-            person.remote_addr = random.choice(remote_addrs)
-            values[person.pk] = person.remote_addr
+            remote_addr = random.choice(remote_addrs)
+            person.remote_addr = remote_addr
+            values[person.pk] = remote_addr
         Person.objects.bulk_update(people)
 
         people = Person.objects.order_by('pk').all()
@@ -334,8 +338,9 @@ class BulkUpdateTests(TestCase):
         people = Person.objects.order_by('pk').all()
         values = {}
         for idx, person in enumerate(people):
-            person.my_file = random.choice(files)
-            values[person.pk] = person.my_file
+            my_file = random.choice(files)
+            person.my_file = my_file
+            values[person.pk] = my_file
         Person.objects.bulk_update(people)
 
         people = Person.objects.order_by('pk').all()
@@ -347,13 +352,49 @@ class BulkUpdateTests(TestCase):
         people = Person.objects.order_by('pk').all()
         values = {}
         for idx, person in enumerate(people):
-            person.image = random.choice(images)
-            values[person.pk] = person.image
+            image = random.choice(images)
+            person.image = image
+            values[person.pk] = image
         Person.objects.bulk_update(people)
 
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
             self.assertEqual(person.image, values[person.pk])
+
+    def test_custom_fields(self):
+        values = {}
+        person = Person.objects.get(name='Mike')
+        person.data = {'name': 'mikey', 'age': 99, 'ex': -99}
+        person.save()
+        values[person.pk] = {'name': 'mikey', 'age': 99, 'ex': -99}
+
+        person = Person.objects.get(name='Mary')
+        person.data = {'names': {'name': []}}
+        person.save()
+        values[person.pk] = {'names': {'name': []}}
+
+        person = Person.objects.get(name='Pete')
+        person.data = []
+        person.save()
+        values[person.pk] = []
+
+        person = Person.objects.get(name='Sandra')
+        person.data = [{'name': 'Pete'}, {'name': 'Mike'}]
+        person.save()
+        values[person.pk] = [{'name': 'Pete'}, {'name': 'Mike'}]
+
+        person = Person.objects.get(name='Ash')
+        person.data = {'text': 'bla'}
+        person.save()
+        values[person.pk] = {'text': 'bla'}
+
+        person = Person.objects.get(name='Crystal')
+        values[person.pk] = person.data
+        person.save()
+
+        people = Person.objects.all()
+        for person in people:
+            self.assertEqual(person.data, values[person.pk])
 
     def test_update_fields(self):
         """

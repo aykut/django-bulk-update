@@ -1,5 +1,7 @@
 from django.db import models
 
+from jsonfield import JSONField
+
 from bulk_update.manager import BulkUpdateManager
 
 
@@ -34,5 +36,7 @@ class Person(models.Model):
 
     my_file = models.FileField(upload_to='/some/path/', null=True, blank=True)
     image = models.ImageField(upload_to='/some/path/', null=True, blank=True)
+
+    data = JSONField(null=True, blank=True)
 
     objects = BulkUpdateManager()
