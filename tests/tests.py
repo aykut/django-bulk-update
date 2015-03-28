@@ -11,8 +11,8 @@ from .models import Person
 class BulkUpdateTests(TestCase):
     def setUp(self):
         self.now = timezone.now().replace(microsecond=0)  # mysql doesn't do microseconds. # NOQA
-        self.date = date(2015, 03, 28)
-        self.time = time(13, 00)
+        self.date = date(2015, 3, 28)
+        self.time = time(13, 0)
         Person.objects.bulk_create(Person(**person) for person in [
             {
                 'big_age': 59999999999999999, 'comma_separated_age': '1,2,3',
