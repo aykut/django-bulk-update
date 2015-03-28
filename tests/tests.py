@@ -35,7 +35,7 @@ class BulkUpdateTests(TestCase):
                 'file_path': 'users.json', 'slug': 'pete', 'text': 'dummy',
                 'url': 'https://google.com', 'height': Decimal('1.93'),
                 'date_time': self.now, 'date': self.date, 'time': self.time,
-                'float_height': 0.5 + 0.3, 'remote_addr': '127.0.0.1',
+                'float_height': 0.5, 'remote_addr': '127.0.0.1',
                 'my_file': 'fixtures.json',
                 'data': [{'name': 'Pete'}, {'name': 'Mike'}],
             },
@@ -48,7 +48,7 @@ class BulkUpdateTests(TestCase):
                 'text': 'bla bla bla', 'url': 'news.ycombinator.com',
                 'height': Decimal('1.78'), 'date_time': self.now,
                 'date': self.date, 'time': self.time,
-                'float_height': 0.8 + 0.9, 'my_file': 'dummy.png',
+                'float_height': 0.8, 'my_file': 'dummy.png',
                 'data': {'text': 'bla bla bla', 'names': ['Mike', 'Pete']},
             },
             {
@@ -82,7 +82,7 @@ class BulkUpdateTests(TestCase):
                 'file_path': '/home/dummy.txt', 'slug': 'crystal',
                 'text': 'dummy text', 'url': 'docs.djangoproject.com',
                 'height': Decimal('1.71'), 'date_time': self.now,
-                'date': self.date, 'time': self.time, 'float_height': 2 ** 100,
+                'date': self.date, 'time': self.time, 'float_height': 2 ** 10,
                 'image': 'dummy.png', 'data': [],
             },
         ])
@@ -310,7 +310,7 @@ class BulkUpdateTests(TestCase):
         people = Person.objects.order_by('pk').all()
         initial_values = {p.pk: p.float_height for p in people}
         for idx, person in enumerate(people):
-            person.float_height = person.float_height * 1.1
+            person.float_height = person.float_height * 2
             initial_values[person.pk] = person.float_height
         Person.objects.bulk_update(people)
 
@@ -363,34 +363,32 @@ class BulkUpdateTests(TestCase):
 
     def test_custom_fields(self):
         values = {}
-        person = Person.objects.get(name='Mike')
+        people = Person.objects.all()
+        people_dict = {p.name: p for p in people}
+        person = people_dict['Mike']
         person.data = {'name': 'mikey', 'age': 99, 'ex': -99}
-        person.save()
         values[person.pk] = {'name': 'mikey', 'age': 99, 'ex': -99}
 
-        person = Person.objects.get(name='Mary')
+        person = people_dict['Mary']
         person.data = {'names': {'name': []}}
-        person.save()
         values[person.pk] = {'names': {'name': []}}
 
-        person = Person.objects.get(name='Pete')
+        person = people_dict['Pete']
         person.data = []
-        person.save()
         values[person.pk] = []
 
-        person = Person.objects.get(name='Sandra')
+        person = people_dict['Sandra']
         person.data = [{'name': 'Pete'}, {'name': 'Mike'}]
-        person.save()
         values[person.pk] = [{'name': 'Pete'}, {'name': 'Mike'}]
 
-        person = Person.objects.get(name='Ash')
+        person = people_dict['Ash']
         person.data = {'text': 'bla'}
-        person.save()
         values[person.pk] = {'text': 'bla'}
 
-        person = Person.objects.get(name='Crystal')
+        person = people_dict['Crystal']
         values[person.pk] = person.data
-        person.save()
+
+        Person.objects.bulk_update(people)
 
         people = Person.objects.all()
         for person in people:
