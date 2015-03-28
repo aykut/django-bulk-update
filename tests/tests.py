@@ -1,5 +1,6 @@
-from datetime import timedelta
+from datetime import timedelta, date, time
 from decimal import Decimal
+import random
 
 from django.utils import timezone
 from django.test import TestCase
@@ -10,6 +11,8 @@ from .models import Person
 class BulkUpdateTests(TestCase):
     def setUp(self):
         self.now = timezone.now().replace(microsecond=0)  # mysql doesn't do microseconds. # NOQA
+        self.date = date(2015, 03, 28)
+        self.time = time(13, 00)
         Person.objects.bulk_create(Person(**person) for person in [
             {
                 'big_age': 59999999999999999, 'comma_separated_age': '1,2,3',
@@ -19,7 +22,10 @@ class BulkUpdateTests(TestCase):
                 'file_path': '/Users/user/fixtures.json', 'slug': 'mike',
                 'text': 'here is a dummy text',
                 'url': 'https://docs.djangoproject.com',
-                'height': Decimal('1.81'), 'created': self.now,
+                'height': Decimal('1.81'), 'date_time': self.now,
+                'date': self.date, 'time': self.time, 'float_height': 0.3,
+                'remote_addr': '192.0.2.30', 'my_file': 'dummy.txt',
+                'image': 'kitten.jpg',
             },
             {
                 'big_age': 245999992349999, 'comma_separated_age': '6,2,9',
@@ -28,7 +34,9 @@ class BulkUpdateTests(TestCase):
                 'name': 'Pete', 'email': 'petekweetookniet@mailinator.com',
                 'file_path': 'users.json', 'slug': 'pete', 'text': 'dummy',
                 'url': 'https://google.com', 'height': Decimal('1.93'),
-                'created': self.now,
+                'date_time': self.now, 'date': self.date, 'time': self.time,
+                'float_height': 0.5 + 0.3, 'remote_addr': '127.0.0.1',
+                'my_file': 'fixtures.json',
             },
             {
                 'big_age': 9929992349999, 'comma_separated_age': '6,2,9,10,5',
@@ -37,7 +45,9 @@ class BulkUpdateTests(TestCase):
                 'name': 'Ash', 'email': 'rashash@mailinator.com',
                 'file_path': '/Downloads/kitten.jpg', 'slug': 'ash',
                 'text': 'bla bla bla', 'url': 'news.ycombinator.com',
-                'height': Decimal('1.78'), 'created': self.now,
+                'height': Decimal('1.78'), 'date_time': self.now,
+                'date': self.date, 'time': self.time,
+                'float_height': 0.8 + 0.9, 'my_file': 'dummy.png',
             },
             {
                 'big_age': 9992349234, 'comma_separated_age': '12,29,10,5',
@@ -46,7 +56,9 @@ class BulkUpdateTests(TestCase):
                 'name': 'Mary', 'email': 'marykrismas@mailinator.com',
                 'file_path': 'dummy.png', 'slug': 'mary',
                 'text': 'bla bla bla bla bla', 'url': 'news.ycombinator.com',
-                'height': Decimal('1.65'), 'created': self.now,
+                'height': Decimal('1.65'), 'date_time': self.now,
+                'date': self.date, 'time': self.time, 'float_height': 0,
+                'remote_addr': '2a02:42fe::4',
             },
             {
                 'big_age': 999234, 'comma_separated_age': '12,1,30,50',
@@ -55,7 +67,9 @@ class BulkUpdateTests(TestCase):
                 'name': 'Sandra', 'email': 'sandrasalamandr@mailinator.com',
                 'file_path': '/home/dummy.png', 'slug': 'sandra',
                 'text': 'this is a dummy text', 'url': 'google.com',
-                'height': Decimal('1.59'), 'created': self.now,
+                'height': Decimal('1.59'), 'date_time': self.now,
+                'date': self.date, 'time': self.time, 'float_height': 2 ** 2,
+                'image': 'dummy.jpeg',
             },
             {
                 'big_age': 9999999999, 'comma_separated_age': '1,100,3,5',
@@ -64,7 +78,9 @@ class BulkUpdateTests(TestCase):
                 'name': 'Crystal', 'email': 'crystalpalace@mailinator.com',
                 'file_path': '/home/dummy.txt', 'slug': 'crystal',
                 'text': 'dummy text', 'url': 'docs.djangoproject.com',
-                'height': Decimal('1.71'), 'created': self.now,
+                'height': Decimal('1.71'), 'date_time': self.now,
+                'date': self.date, 'time': self.time, 'float_height': 2 ** 100,
+                'image': 'dummy.png',
             },
         ])
 
@@ -225,7 +241,6 @@ class BulkUpdateTests(TestCase):
 
     def test_url_field(self):
         people = Person.objects.order_by('pk').all()
-
         urls = ['docs.djangoproject.com', 'news.ycombinator.com',
                 'https://docs.djangoproject.com', 'https://google.com',
                 'google.com', 'news.ycombinator.com']
@@ -237,22 +252,44 @@ class BulkUpdateTests(TestCase):
         for idx, person in enumerate(people):
             self.assertEqual(person.url, urls[idx])
 
-    def test_datetime(self):
+    def test_date_time_field(self):
         """
             Datetime values are saved correctly
         """
 
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
-            person.created = self.now - timedelta(days=1 + idx)
+            person.date_time = self.now - timedelta(days=1 + idx,
+                                                    hours=1 + idx)
         Person.objects.bulk_update(people)
 
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
-            self.assertEqual(person.created,
-                             self.now - timedelta(days=1 + idx))
+            self.assertEqual(person.date_time,
+                             self.now - timedelta(days=1 + idx, hours=1 + idx))
 
-    def test_decimal(self):
+    def test_date_field(self):
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.date = self.date - timedelta(days=1 + idx)
+        Person.objects.bulk_update(people)
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.date,
+                             self.date - timedelta(days=1 + idx))
+
+    def test_time_field(self):
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.time = time(1 + idx, 0 + idx)
+        Person.objects.bulk_update(people)
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.time, time(1 + idx, 0 + idx))
+
+    def test_decimal_field(self):
         """
             Decimal values are saved correctly
         """
@@ -265,6 +302,58 @@ class BulkUpdateTests(TestCase):
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
             self.assertEqual(person.height, Decimal('1.%s' % (50 + idx * 7)))
+
+    def test_float_field(self):
+        people = Person.objects.order_by('pk').all()
+        initial_values = {p.pk: p.float_height for p in people}
+        for idx, person in enumerate(people):
+            person.float_height = person.float_height * 1.1
+            initial_values[person.pk] = person.float_height
+        Person.objects.bulk_update(people)
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.float_height, initial_values[person.pk])
+
+    def test_generic_ipaddress_field(self):
+        people = Person.objects.order_by('pk').all()
+        remote_addrs = ['127.0.0.1', '192.0.2.30', '2a02:42fe::4']
+        values = {}
+        for idx, person in enumerate(people):
+            person.remote_addr = random.choice(remote_addrs)
+            values[person.pk] = person.remote_addr
+        Person.objects.bulk_update(people)
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.remote_addr, values[person.pk])
+
+    def test_file_field(self):
+        files = ['dummy.txt', 'kitten.jpg', 'fixtures.json',
+                 'dummy.png', 'users.json', 'dummy.png']
+        people = Person.objects.order_by('pk').all()
+        values = {}
+        for idx, person in enumerate(people):
+            person.my_file = random.choice(files)
+            values[person.pk] = person.my_file
+        Person.objects.bulk_update(people)
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.my_file, values[person.pk])
+
+    def test_image_field(self):
+        images = ['kitten.jpg', 'dummy.png', 'users.json', 'dummy.png']
+        people = Person.objects.order_by('pk').all()
+        values = {}
+        for idx, person in enumerate(people):
+            person.image = random.choice(images)
+            values[person.pk] = person.image
+        Person.objects.bulk_update(people)
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.image, values[person.pk])
 
     def test_update_fields(self):
         """

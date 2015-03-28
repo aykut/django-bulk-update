@@ -1,1 +1,2 @@
 dj-database-url
+Pillow==2.7.0
