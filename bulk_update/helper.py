@@ -6,6 +6,7 @@ Main module with the bulk_update function.
 import itertools
 
 from django.db import connections, models
+from django.db.models.query import QuerySet
 
 
 def _get_db_type(field, connection):
@@ -34,7 +35,13 @@ def grouper(iterable, size):
 def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 using='default', batch_size=None):
     assert batch_size is None or batch_size > 0
-    batch_size = batch_size or len(objs)
+
+    # if we have a QuerySet, avoid loading objects into memory
+    if isinstance(objs, QuerySet):
+        obj_count = objs.count()
+    else:
+        obj_count = len(objs)
+    batch_size = batch_size or obj_count
 
     connection = connections[using]
     if meta is None:
