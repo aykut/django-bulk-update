@@ -1,6 +1,9 @@
 1.2.0 (upcoming)
 - Geometry Types support
-- more tests
+
+1.1.1
+- Use .count() method instead of len for performance reasons (joshblum)
+- added more tests
 
 1.1.0
 - fixes for sqlite and added tests (towr)

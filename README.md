@@ -103,8 +103,8 @@ Contributors
 - [HowerHell](https://github.com/HoverHell)
 - [c-nichols](https://github.com/c-nichols)
 - [towr](https://github.com/towr)
+- [joshblum](https://github.com/joshblum)
 
 TODO
 ==================================
-- Tests for every types of model fields, even for a few custom fields.
 - Geometry Fields support
