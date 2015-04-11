@@ -423,3 +423,16 @@ class BulkUpdateTests(TestCase):
         for person1, person2 in zip(people, people2):
             self.assertNotEqual(person1.age, person2.age)
             self.assertEqual(person1.height, person2.height)
+
+    def test_object_list(self):
+        """
+          Pass in a list instead of a queryset for bulk updating
+        """
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.big_age = idx + 27
+        Person.objects.bulk_update(list(people))
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.big_age, idx + 27)
