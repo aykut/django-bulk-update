@@ -91,7 +91,7 @@ def get_fixtures(n=None):
     n = n or len(FIXTURES)
     fixtures = itertools.cycle(FIXTURES)
     for _ in xrange(n):
-        yield fixtures.next()
+        yield next(fixtures)
 
 
 def create_fixtures(n=None):
