@@ -3,6 +3,7 @@ from decimal import Decimal
 import itertools
 
 from django.utils import timezone
+from six.moves import xrange
 
 from .models import Person
 

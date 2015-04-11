@@ -1,3 +1,4 @@
 dj-database-url
 Pillow==2.7.0
 jsonfield==1.0.3
+six==1.9.0
