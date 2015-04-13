@@ -17,7 +17,9 @@ Usage
 With manager:
 
 ```python
+import random
 from bulk_update.manager import BulkUpdateManager
+from tests.models import Person
 
 class Person(models.Model):
     ...
@@ -26,8 +28,7 @@ class Person(models.Model):
 random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
 people = Person.objects.all()
 for person in people:
-  r = random.randrange(4)
-  person.name = random_names[r]
+  person.name = random.choice(random_names)
 
 Person.objects.bulk_update(people, update_fields=['name'])  # updates only name column
 Person.objects.bulk_update(people, exclude_fields=['username'])  # updates all columns except username
@@ -39,13 +40,14 @@ Person.objects.bulk_update(people, batch_size=50000)  # updates all columns by 5
 With helper:
 
 ```python
+import random
 from bulk_update.helper import bulk_update
+from tests.models import Person
 
 random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
 people = Person.objects.all()
 for person in people:
-  r = random.randrange(4)
-  person.name = random_names[r]
+  person.name = random.choice(random_names)
 
 bulk_update(people, update_fields=['name'])  # updates only name column
 bulk_update(people, exclude_fields=['username'])  # updates all columns except username
@@ -56,6 +58,10 @@ bulk_update(people, batch_size=50000)  # updates all columns by 50000 sized chun
 
 Performance Tests:
 ==================================
+Here we test the performance of the `bulk_update` function vs. simply calling
+`.save()` on every object update (`dmmy_update`). The interesting metric is the speedup using
+the `bulk_update` function more than the actual raw times.
+
 
 ```python
 # Note: SQlite is unable to run the `timeit` tests
@@ -73,38 +79,39 @@ In [7]: django.db.connection.creation.create_test_db()
 In [8]: create_fixtures(1000)
 
 In [9]: setup='''
-  ....: from tests.models import Person
-  ....: ids=list(Person.objects.values_list('id', flat=True)[:1000])
-  ....: from django.db.models import F
-  ....: people=Person.objects.filter(id__in=ids)
-  ....: dj_update = lambda: people.update(name=F('name'), email=F('email'))
-  ....: '''
-In [10]: print "Django update performance:", min(timeit.Timer('dj_update()', setup=setup).repeat(7, 100))
-Django update performance: 1.1035900116
+import random
+from bulk_update import helper
+from tests.models import Person
+random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
+ids = list(Person.objects.values_list('id', flat=True)[:1000])
+people = Person.objects.filter(id__in=ids)
+for p in people:
+    name = random.choice(random_names)
+    p.name = name
+    p.email = '%s@example.com' % name
+bu_update = lambda: helper.bulk_update(people, update_fields=['name', 'email'])
+'''
+
+In [10]: bu_perf = min(timeit.Timer('bu_update()', setup=setup).repeat(7, 100))
 
 In [11]: setup='''
-  ....: from bulk_update import helper
-  ....: from tests.models import Person
-  ....: ids=list(Person.objects.values_list('id', flat=True)[:1000])
-  ....: people=Person.objects.filter(id__in=ids)
-  ....: bu_update = lambda: helper.bulk_update(people, update_fields=['name', 'email'])
-  ....: '''
-In [12]: print "Bulk update performance:", min(timeit.Timer('bu_update()', setup=setup).repeat(7, 100))
-Bulk update performance: 11.0196619034
+import random
+from tests.models import Person
+from django.db.models import F
+random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
+ids = list(Person.objects.values_list('id', flat=True)[:1000])
+people = Person.objects.filter(id__in=ids)
+def dmmy_update():
+    for p in people:
+        name = random.choice(random_names)
+        p.name = name
+        p.email = '%s@example.com' % name
+        p.save(update_fields=['name', 'email'])
+'''
 
-In [13]: setup='''
-  ....: from tests.models import Person
-  ....: from django.db.models import F
-  ....: ids=list(Person.objects.values_list('id', flat=True)[:1000])
-  ....: people=Person.objects.filter(id__in=ids)
-  ....: def dmmy_update():
-  ....:     for p in people:
-  ....:         p.name = F('name')
-  ....:         p.email = F('email')
-  ....:         p.save(update_fields=['name', 'email'])
-  ....: '''
-In [14]: print "Naive update performance", min(timeit.Timer('dmmy_update()', setup=setup).repeat(7, 100))
-Naive update performance 340.86224699
+In [12]: dmmy_perf = min(timeit.Timer('dmmy_update()', setup=setup).repeat(7, 100))
+In [13]: print 'Bulk update performance: %.2f. Dummy update performance: %.2f. Speedup: %.2f.' % (bu_perf, dmmy_perf, dmmy_perf / bu_perf)
+
 ```
 
 Requirements

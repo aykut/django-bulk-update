@@ -15,7 +15,7 @@ def get_fixtures(n=None):
     _now = timezone.now().replace(microsecond=0)  # mysql doesn't do microseconds. # NOQA
     _date = date(2015, 3, 28)
     _time = time(13, 0)
-    FIXTURES = [
+    fixtures = [
         {
             'big_age': 59999999999999999, 'comma_separated_age': '1,2,3',
             'age': -99, 'positive_age': 9999, 'positive_small_age': 299,
@@ -88,8 +88,8 @@ def get_fixtures(n=None):
             'image': 'dummy.png', 'data': [],
         },
     ]
-    n = n or len(FIXTURES)
-    fixtures = itertools.cycle(FIXTURES)
+    n = n or len(fixtures)
+    fixtures = itertools.cycle(fixtures)
     for _ in xrange(n):
         yield next(fixtures)
 
