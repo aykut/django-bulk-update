@@ -111,7 +111,7 @@ def dmmy_update():
 
 In [12]: dmmy_perf = min(timeit.Timer('dmmy_update()', setup=setup).repeat(7, 100))
 In [13]: print 'Bulk update performance: %.2f. Dummy update performance: %.2f. Speedup: %.2f.' % (bu_perf, dmmy_perf, dmmy_perf / bu_perf)
-
+Bulk update performance: 7.05. Dummy update performance: 373.12. Speedup: 52.90.
 ```
 
 Requirements
