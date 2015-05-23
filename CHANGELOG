@@ -1,3 +1,21 @@
+1.2.0 (upcoming)
+- Geometry Types support
+
+1.1.1
+- Use .count() method instead of len for performance reasons (joshblum)
+- added more tests
+
+1.1.0
+- fixes for sqlite and added tests (towr)
+- refactor and update for mysql (HoverHell)
+
+1.0.5
+- fixed PositiveIntegerField and PositiveSmallIntegerField issues at db_type
+
+1.0.4
+- Allow non-postgres databases to work too (daleobrien)
+- Allow the use of fields that requires pre-processing (sruon)
+
 1.0.3
 - added support for ARRAY types and refactored GenericIPAddressField & IPAddressField.
 

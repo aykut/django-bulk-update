@@ -1,0 +1,50 @@
+language: python
+
+python:
+  - 3.4
+  - 2.7
+
+env:
+  matrix:
+    - DJANGO=1.7 DATABASE_URL='sqlite://localhost/:memory:'
+    - DJANGO=1.7 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.7 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.6 DATABASE_URL='sqlite://localhost/:memory:'
+    - DJANGO=1.6 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.6 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.5 DATABASE_URL='sqlite://localhost/:memory:'
+    - DJANGO=1.5 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.5 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.4 DATABASE_URL='sqlite://localhost/:memory:'
+    - DJANGO=1.4 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - DJANGO=1.4 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+
+before_script:
+  - sh -c "if [ '$DATABASE_URL' = 'postgres://postgres@127.0.0.1/django_bulk_update_test' ];
+    then psql -c 'DROP DATABASE IF EXISTS django_bulk_update_test;' -U postgres; fi"
+  - sh -c "if [ '$DATABASE_URL' = 'postgres://postgres@127.0.0.1/django_bulk_update_test' ];
+    then psql -c 'create database django_bulk_update_test;' -U postgres; fi"
+  - sh -c "if [ '$DATABASE_URL' = 'mysql://root@127.0.0.1/django_bulk_update_test' ]; then mysql
+    -e 'create database IF NOT EXISTS django_bulk_update_test CHARACTER SET utf8 COLLATE utf8_general_ci;';
+    fi"
+
+install:
+  - pip install -q -r "tests/requirements/django-$DJANGO.txt" && pip install coveralls
+  - if [ $DATABASE_URL == 'postgres://postgres@127.0.0.1/django_bulk_update_test' ]; then pip
+    install -q psycopg2 ; fi
+  - if [ $DATABASE_URL == 'mysql://root@127.0.0.1/django_bulk_update_test' ]; then pip install
+    -q mysqlclient ; fi
+
+script: coverage run --source=bulk_update --omit='bulk_update/tests*' runtest.py
+
+after_success:
+  if [[ $COVERALLS_REPO_TOKEN ]]; then coveralls; fi
+
+matrix:
+  exclude:
+    - python: 3.4
+      env: DJANGO=1.4 DATABASE_URL='sqlite://localhost/:memory:'
+    - python: 3.4
+      env: DJANGO=1.4 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - python: 3.4
+      env: DJANGO=1.4 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
