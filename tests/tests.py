@@ -29,7 +29,7 @@ class BulkUpdateTests(TestCase):
             setattr(person, field, value)
 
         # update
-        Person.objects.bulk_update(people)
+        Person.objects.bulk_update(people, update_fields=[field])
 
         # check
         people = Person.objects.order_by('pk').all()
