@@ -17,279 +17,114 @@ class BulkUpdateTests(TestCase):
         self.time = time(13, 0)
         create_fixtures()
 
-    def test_big_integer_field(self):
+    def _test_field(self, field, idx_to_value_function):
+        '''
+        Helper to do repeative simple tests on one field.
+        '''
+
+        # set
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
-            person.big_age = idx + 27
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        # update
         Person.objects.bulk_update(people)
 
+        # check
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
-            self.assertEqual(person.big_age, idx + 27)
+            saved_value = getattr(person, field)
+            expected_value = idx_to_value_function(idx)
+            self.assertEqual(saved_value, expected_value)
+
+    def test_simple_fields(self):
+        fn = lambda idx: idx + 27
+        for field in ('default', 'big_age', 'age', 'positive_age',
+                      'positive_small_age', 'small_age'):
+            self._test_field(field,  fn)
 
     def test_comma_separated_integer_field(self):
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.comma_separated_age = str(idx) + ',27'
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.comma_separated_age, str(idx) + ',27')
-
-    def test_integer_field(self):
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.age = idx + 27
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.age, idx + 27)
-
-    def test_positive_integer_field(self):
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.positive_age = idx + 27
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.positive_age, idx + 27)
-
-    def test_positive_small_integer_field(self):
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.positive_small_age = idx + 27
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.positive_small_age, idx + 27)
-
-    def test_small_integer_field(self):
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.small_age = idx + 27
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.small_age, idx + 27)
+        fn = lambda idx: str(idx) + ',27'
+        self._test_field('comma_separated_age',  fn)
 
     def test_boolean_field(self):
-        vals = [True, False, True]
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.certified = vals[idx % 3]
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.certified, vals[idx % 3])
+        fn = lambda idx: [True, False][idx % 2]
+        self._test_field('certified',  fn)
 
     def test_null_boolean_field(self):
-        """
-            Null-boolean values are saved correctly
-        """
-
-        vals = [True, False, None]
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.null_certified = vals[idx % 3]
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.null_certified, vals[idx % 3])
+        fn = lambda idx: [True, False, None][idx % 3]
+        self._test_field('null_certified',  fn)
 
     def test_char_field(self):
-        people = Person.objects.order_by('pk').all()
-
-        # change names with bulk update
-        names = ['Walter', 'The Dude', 'Donny', 'Jesus', 'Buddha', 'Clark']
-        for idx, person in enumerate(people):
-            person.name = names[idx]
-        Person.objects.bulk_update(people)
-
-        # check that names are set
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.name, names[idx])
+        NAMES = ['Walter', 'The Dude', 'Donny', 'Jesus', 'Buddha', 'Clark']
+        fn = lambda idx: NAMES[idx % 5]
+        self._test_field('name',  fn)
 
     def test_email_field(self):
-        """
-            Email values are saved correctly
-        """
-
-        emails = ['walter@mailinator.com', 'thedude@mailinator.com',
+        EMAILS = ['walter@mailinator.com', 'thedude@mailinator.com',
                   'donny@mailinator.com', 'jesus@mailinator.com',
                   'buddha@mailinator.com', 'clark@mailinator.com']
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.email = emails[idx]
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.email, emails[idx])
+        fn = lambda idx: EMAILS[idx % 5]
+        self._test_field('email',  fn)
 
     def test_file_path_field(self):
-        file_paths = ['/home/dummy.txt', '/Downloads/kitten.jpg',
-                      '/Users/user/fixtures.json', 'dummy.png',
-                      'users.json', '/home/dummy.png']
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.file_path = file_paths[idx]
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.file_path, file_paths[idx])
+        PATHS = ['/home/dummy.txt', '/Downloads/kitten.jpg',
+                 '/Users/user/fixtures.json', 'dummy.png',
+                 'users.json', '/home/dummy.png']
+        fn = lambda idx: PATHS[idx % 5]
+        self._test_field('file_path',  fn)
 
     def test_slug_field(self):
-        people = Person.objects.order_by('pk').all()
-
-        slugs = ['jesus', 'buddha', 'clark', 'the-dude', 'donny', 'walter']
-        for idx, person in enumerate(people):
-            person.slug = slugs[idx]
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.slug, slugs[idx])
+        SLUGS = ['jesus', 'buddha', 'clark', 'the-dude', 'donny', 'walter']
+        fn = lambda idx: SLUGS[idx % 5]
+        self._test_field('slug',  fn)
 
     def test_text_field(self):
-        people = Person.objects.order_by('pk').all()
-
-        texts = ['this is a dummy text', 'dummy text', 'bla bla bla bla bla',
+        TEXTS = ['this is a dummy text', 'dummy text', 'bla bla bla bla bla',
                  'here is a dummy text', 'dummy', 'bla bla bla']
-        for idx, person in enumerate(people):
-            person.text = texts[idx]
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.text, texts[idx])
+        fn = lambda idx: TEXTS[idx % 5]
+        self._test_field('text',  fn)
 
     def test_url_field(self):
-        people = Person.objects.order_by('pk').all()
-        urls = ['docs.djangoproject.com', 'news.ycombinator.com',
+        URLS = ['docs.djangoproject.com', 'news.ycombinator.com',
                 'https://docs.djangoproject.com', 'https://google.com',
                 'google.com', 'news.ycombinator.com']
-        for idx, person in enumerate(people):
-            person.url = urls[idx]
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.url, urls[idx])
+        fn = lambda idx: URLS[idx % 5]
+        self._test_field('url',  fn)
 
     def test_date_time_field(self):
-        """
-            Datetime values are saved correctly
-        """
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.date_time = self.now - timedelta(days=1 + idx,
-                                                    hours=1 + idx)
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.date_time,
-                             self.now - timedelta(days=1 + idx, hours=1 + idx))
+        fn = lambda idx: self.now - timedelta(days=1 + idx, hours=1 + idx)
+        self._test_field('date_time',  fn)
 
     def test_date_field(self):
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.date = self.date - timedelta(days=1 + idx)
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.date,
-                             self.date - timedelta(days=1 + idx))
+        fn = lambda idx: self.date - timedelta(days=1 + idx)
+        self._test_field('date',  fn)
 
     def test_time_field(self):
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.time = time(1 + idx, 0 + idx)
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.time, time(1 + idx, 0 + idx))
+        fn = lambda idx: time(1 + idx, idx)
+        self._test_field('time',  fn)
 
     def test_decimal_field(self):
-        """
-            Decimal values are saved correctly
-        """
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            person.height = Decimal('1.%s' % (50 + idx * 7))
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.height, Decimal('1.%s' % (50 + idx * 7)))
+        fn = lambda idx: Decimal('1.%s' % (50 + idx * 7))
+        self._test_field('height',  fn)
 
     def test_float_field(self):
-        people = Person.objects.order_by('pk').all()
-        initial_values = {p.pk: p.float_height for p in people}
-        for idx, person in enumerate(people):
-            person.float_height = person.float_height * 2
-            initial_values[person.pk] = person.float_height
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.float_height, initial_values[person.pk])
+        fn = lambda idx: float(idx) * 2.0
+        self._test_field('float_height',  fn)
 
     def test_generic_ipaddress_field(self):
-        people = Person.objects.order_by('pk').all()
-        remote_addrs = ['127.0.0.1', '192.0.2.30', '2a02:42fe::4']
-        values = {}
-        for idx, person in enumerate(people):
-            remote_addr = random.choice(remote_addrs)
-            person.remote_addr = remote_addr
-            values[person.pk] = remote_addr
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.remote_addr, values[person.pk])
-
-    def test_file_field(self):
-        files = ['dummy.txt', 'kitten.jpg', 'fixtures.json',
-                 'dummy.png', 'users.json', 'dummy.png']
-        people = Person.objects.order_by('pk').all()
-        values = {}
-        for idx, person in enumerate(people):
-            my_file = random.choice(files)
-            person.my_file = my_file
-            values[person.pk] = my_file
-        Person.objects.bulk_update(people)
-
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.my_file, values[person.pk])
+        IPS = ['127.0.0.1', '192.0.2.30', '2a02:42fe::4', '10.0.0.1',
+               '8.8.8.8']
+        fn = lambda idx: IPS[idx % 5]
+        self._test_field('remote_addr',  fn)
 
     def test_image_field(self):
-        images = ['kitten.jpg', 'dummy.png', 'users.json', 'dummy.png']
-        people = Person.objects.order_by('pk').all()
-        values = {}
-        for idx, person in enumerate(people):
-            image = random.choice(images)
-            person.image = image
-            values[person.pk] = image
-        Person.objects.bulk_update(people)
+        IMGS = ['kitten.jpg', 'dummy.png', 'user.json', 'dummy.png', 'foo.gif']
+        fn = lambda idx: IMGS[idx % 5]
 
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            self.assertEqual(person.image, values[person.pk])
+        self._test_field('image',  fn)
+        self._test_field('my_file',  fn)
 
     def test_custom_fields(self):
         values = {}
