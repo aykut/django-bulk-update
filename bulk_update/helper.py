@@ -74,6 +74,12 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         case_clause_template = '"{column}" = (CASE "{pkcolumn}" {{when}}'
         tail_end_template = 'END)'
 
+    # String escaping in ANSI SQL is done by using double quotes (").
+    # Unfortunately, this escaping method is not portable to MySQL, unless it
+    # is set in ANSI compatibility mode.
+    quote_mark = '"' if 'mysql' not in vendor else '`'
+    case_clause_template = case_clause_template.replace('"', quote_mark)
+
     for objs_batch in grouper(objs, batch_size):
         pks = []
         case_clauses = {}
