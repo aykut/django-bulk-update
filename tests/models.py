@@ -39,4 +39,7 @@ class Person(models.Model):
 
     data = JSONField(null=True, blank=True)
 
+    default = models.IntegerField(null=True, blank=True,
+                                  help_text="A reserved keyword")
+
     objects = BulkUpdateManager()
