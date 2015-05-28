@@ -39,8 +39,10 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     # if we have a QuerySet, avoid loading objects into memory
     if isinstance(objs, QuerySet):
         batch_size = batch_size or objs.count()
+        if objs.count() == 0: return
     else:
         batch_size = batch_size or len(objs)
+        if len(objs) == 0: return
 
     connection = connections[using]
     if meta is None:
