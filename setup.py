@@ -1,4 +1,5 @@
 import os
+import sys
 from setuptools import setup, find_packages
 
 README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
@@ -6,9 +7,21 @@ README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
+version = "1.1.3"
+
+if sys.argv[-1] == 'publish':
+    os.system('python setup.py sdist upload')
+    os.system('python setup.py bdist_wheel upload')
+    sys.exit()
+
+if sys.argv[-1] == 'tag':
+    os.system("git tag -a %s -m 'version %s'" % (version, version))
+    os.system("git push --tags")
+    sys.exit()
+
 setup(
     name='django-bulk-update',
-    version='1.1.3',
+    version=version,
     packages=find_packages(),
     include_package_data=True,
     description='Bulk update using one query over Django ORM.',
@@ -19,6 +32,7 @@ setup(
     install_requires=[
         'django>=1.2',
     ],
+    zip_safe=False,
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
