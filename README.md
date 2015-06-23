@@ -128,6 +128,7 @@ Contributors
 - [towr](https://github.com/towr)
 - [joshblum](https://github.com/joshblum)
 - [luzfcb](https://github.com/luzfcb)
+- [torchingloom](https://github.com/torchingloom)
 
 TODO
 ==================================
