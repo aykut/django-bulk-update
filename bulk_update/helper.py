@@ -126,7 +126,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             del case_clauses  # ... memory
 
             pkcolumn = meta.pk.column
-            dbtable = meta.db_table
+            dbtable = '{0}{1}{0}'.format(quote_mark, meta.db_table)
             # Storytime: apparently (at least for mysql and sqlite), if a
             # non-simple parameter is added (e.g. a tuple), it is
             # processed with force_text and, accidentally, manages to
