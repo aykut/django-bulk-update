@@ -47,7 +47,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         # TODO: account for iterables
         meta = objs[0]._meta
 
-    if pk_field == 'pk'
+    if pk_field == 'pk':
         pk_field = meta.pk.name
 
     exclude_fields = exclude_fields or []
