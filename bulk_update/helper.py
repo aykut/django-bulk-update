@@ -102,7 +102,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 except KeyError:
                     case_clause = {
                         'sql': case_clause_template.format(
-                            column=column, pkcolumn=getattr(meta, pk_field).column),
+                            column=column, pkcolumn=meta.get_field(pk_field).column),
                         'params': [],
                         'type': _get_db_type(field, connection=connection),
                     }
@@ -128,7 +128,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
             del case_clauses  # ... memory
 
-            pkcolumn = getattr(meta, pk_field).column
+            pkcolumn = meta.get_field(pk_field).column
             dbtable = '{0}{1}{0}'.format(quote_mark, meta.db_table)
             # Storytime: apparently (at least for mysql and sqlite), if a
             # non-simple parameter is added (e.g. a tuple), it is
