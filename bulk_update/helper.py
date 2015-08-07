@@ -33,7 +33,7 @@ def grouper(iterable, size):
 
 
 def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
-                using='default', batch_size=None):
+                using='default', batch_size=None, pk_field='pk'):
     assert batch_size is None or batch_size > 0
 
     # if we have a QuerySet, avoid loading objects into memory
@@ -84,7 +84,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         pks = []
         case_clauses = {}
         for obj in objs_batch:
-            pks.append(obj.pk)
+            pks.append(getattr(obj, pk_field))
             for field in fields:
                 column = field.column
 
@@ -99,7 +99,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 except KeyError:
                     case_clause = {
                         'sql': case_clause_template.format(
-                            column=column, pkcolumn=meta.pk.column),
+                            column=column, pkcolumn=getattr(meta, pk_field).column),
                         'params': [],
                         'type': _get_db_type(field, connection=connection),
                     }
@@ -110,7 +110,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 )
 
                 case_clause['params'].extend(
-                    [obj.pk,
+                    [getattr(obj, pk_field),
                      field.get_db_prep_value(
                          getattr(obj, field.attname), connection)])
 
@@ -125,7 +125,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
             del case_clauses  # ... memory
 
-            pkcolumn = meta.pk.column
+            pkcolumn = getattr(meta, pk_field).column
             dbtable = '{0}{1}{0}'.format(quote_mark, meta.db_table)
             # Storytime: apparently (at least for mysql and sqlite), if a
             # non-simple parameter is added (e.g. a tuple), it is
