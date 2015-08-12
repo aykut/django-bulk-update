@@ -142,6 +142,9 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 .format(
                     dbtable=dbtable, values=values, pkcolumn=pkcolumn,
                     in_clause_sql=in_clause_sql))
+            if connection.vendor == 'oracle':
+                # Oracle likes all SQL in uppercase
+                sql = sql.upper().replace('%S', '%s')
             del values, pks
 
             connection.cursor().execute(sql, parameters)
