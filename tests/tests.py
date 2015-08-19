@@ -201,3 +201,16 @@ class BulkUpdateTests(TestCase):
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
             self.assertEqual(person.big_age, idx + 27)
+
+    def test_object_iter(self):
+        """
+          Pass in an iterator instead of a queryset for bulk updating
+        """
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.big_age = idx + 27
+        Person.objects.bulk_update(iter(people), batch_size=people.count())
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            self.assertEqual(person.big_age, idx + 27)
