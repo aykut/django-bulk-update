@@ -29,9 +29,6 @@ setup(
     url='https://github.com/aykut/django-bulk-update',
     author='Aykut Ozat',
     author_email='aykutozat@gmail.com',
-    install_requires=[
-        'django>=1.2',
-    ],
     zip_safe=False,
     classifiers=[
         'Environment :: Web Environment',
