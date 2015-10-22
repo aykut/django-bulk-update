@@ -4,6 +4,7 @@ Main module with the bulk_update function.
 """
 
 import itertools
+from collections import Iterator
 
 from django.db import connections, models
 from django.db.models.query import QuerySet
@@ -39,13 +40,19 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     # if we have a QuerySet, avoid loading objects into memory
     if isinstance(objs, QuerySet):
         batch_size = batch_size or objs.count()
+    elif isinstance(objs, Iterator) and batch_size is None:
+        raise ValueError, 'Must supply a batch_size when using an iterator'
     else:
         batch_size = batch_size or len(objs)
 
     connection = connections[using]
     if meta is None:
-        # TODO: account for iterables
-        meta = objs[0]._meta
+        if isinstance(objs, Iterator):
+            first_object = iter(objs).next()
+            objs = itertools.chain(iter([first_object]), objs)
+            meta = first_object._meta
+        else:
+            meta = objs[0]._meta
 
     if pk_field == 'pk':
         pk_field = meta.pk.name
@@ -145,6 +152,9 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 .format(
                     dbtable=dbtable, values=values, pkcolumn=pkcolumn,
                     in_clause_sql=in_clause_sql))
+            if connection.vendor == 'oracle':
+                # Oracle likes all SQL in uppercase
+                sql = sql.upper().replace('%S', '%s')
             del values, pks
 
             connection.cursor().execute(sql, parameters)
