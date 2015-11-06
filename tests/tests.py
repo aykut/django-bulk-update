@@ -201,3 +201,16 @@ class BulkUpdateTests(TestCase):
         people = Person.objects.order_by('pk').all()
         for idx, person in enumerate(people):
             self.assertEqual(person.big_age, idx + 27)
+
+    def test_empty_list(self):
+        """
+        Update no elements, passed as a list
+        """
+        Person.objects.bulk_update([])
+
+    def test_empty_queryset(self):
+        """
+        Update no elements, passed as a queryset
+        """
+        Person.objects.bulk_update(Person.objects.filter(name="Aceldotanrilsteucsebces ECSbd (funny name, isn't it?)"))
+
