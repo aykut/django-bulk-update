@@ -73,7 +73,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     # Sqlite also gives some trouble with cast, at least for datetime,
     # but is also permissive for uncast values
     vendor = connection.vendor
-    use_cast = 'mysql' not in vendor and 'sqlite' not in connection.vendor
+    use_cast = 'mysql' not in vendor and 'sqlite' not in vendor
     if use_cast:
         case_clause_template = '"{column}" = CAST(CASE "{pkcolumn}" {{when}}'
         tail_end_template = 'END AS {type})'
