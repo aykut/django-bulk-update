@@ -135,3 +135,7 @@ Contributors
 TODO
 ==================================
 - Geometry Fields support
+
+License
+==================================
+django-bulk-update is released under the MIT License. See the LICENSE file for more details.
