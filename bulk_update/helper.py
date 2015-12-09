@@ -106,7 +106,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 except KeyError:
                     case_clause = {
                         'sql': case_clause_template.format(
-                            column=column, pkcolumn=meta.get_field(pk_field).column),
+                            column=column,
+                            pkcolumn=meta.get_field(pk_field).column),
                         'params': [],
                         'type': _get_db_type(field, connection=connection),
                     }
@@ -149,6 +150,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 .format(
                     dbtable=dbtable, values=values, pkcolumn=pkcolumn,
                     in_clause_sql=in_clause_sql))
+            lenpks = len(pks)
             del values, pks
 
             connection.cursor().execute(sql, parameters)
+            return lenpks
