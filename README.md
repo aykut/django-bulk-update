@@ -131,6 +131,7 @@ Contributors
 - [torchingloom](https://github.com/torchingloom)
 - [cihann](https://github.com/cihann)
 - [wetneb](https://github.com/wetneb)
+- [tatterdemalion](https://github.com/tatterdemalion)
 
 TODO
 ==================================
