@@ -54,6 +54,10 @@ bulk_update(people, exclude_fields=['username'])  # updates all columns except u
 bulk_update(people, using='someotherdb')  # updates all columns using the given db
 bulk_update(people)  # updates all columns using the default db
 bulk_update(people, batch_size=50000)  # updates all columns by 50000 sized chunks using the default db
+
+Note: You can consider to use `.only('name')` in the first example, so that Django will only retrieve name data from db.
+And consider to use `.defer('username')` in the second example, so Django won't retrieve username from db.
+These optimization can improve the performance even more.
 ```
 
 Performance Tests:
