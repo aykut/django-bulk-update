@@ -214,3 +214,14 @@ class BulkUpdateTests(TestCase):
         """
         Person.objects.bulk_update(Person.objects.filter(name="Aceldotanrilsteucsebces ECSbd (funny name, isn't it?)"))
 
+    def test_one_sized_list(self):
+        """
+        Update one sized list, check if have a syntax error for some db backends.
+        """
+        Person.objects.bulk_update(Person.objects.all()[:1])
+
+    def test_one_sized_queryset(self):
+        """
+        Update one sized list, check if have a syntax error for some db backends.
+        """
+        Person.objects.bulk_update(Person.objects.filter(name='Mike'))
