@@ -54,6 +54,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     if pk_field == 'pk':
         pk_field = meta.pk.name
 
+
     exclude_fields = exclude_fields or []
     update_fields = update_fields or [f.attname for f in meta.fields]
     fields = [
@@ -94,8 +95,15 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     for objs_batch in grouper(objs, batch_size):
         pks = []
         case_clauses = {}
+
+        pk_model_field=meta.get_field(pk_field)
+        if isinstance(pk_model_field, models.ForeignKey):
+            pk_attribute=pk_field+"_id"
+        else:
+            pk_attribute=pk_field
+
         for obj in objs_batch:
-            pks.append(getattr(obj, pk_field))
+            pks.append(getattr(obj, pk_attribute))
             for field in fields:
                 column = field.column
 
@@ -111,7 +119,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                     case_clause = {
                         'sql': case_clause_template.format(
                             column=column,
-                            pkcolumn=meta.get_field(pk_field).column),
+                            pkcolumn=pk_model_field.column),
                         'params': [],
                         'type': _get_db_type(field, connection=connection),
                     }
@@ -122,7 +130,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 )
 
                 case_clause['params'].extend(
-                    [getattr(obj, pk_field),
+                    [getattr(obj, pk_attribute),
                      field.get_db_prep_value(
                          getattr(obj, field.attname), connection)])
 
