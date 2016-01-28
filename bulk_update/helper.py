@@ -59,10 +59,14 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     fields = [
         f for f in meta.fields
         if ((not isinstance(f, models.AutoField))
-            and (f.attname in update_fields))]
+            and ((f.attname in update_fields) or
+                 (f.attname.endswith('_id') and
+                  f.attname[:-3] in update_fields)))]
     fields = [
         f for f in fields
-        if f.attname not in exclude_fields]
+        if ((f.attname not in exclude_fields) or
+            (f.attname.endswith('_id') and
+             f.attname[:-3] not in exclude_fields))]
 
     # The case clause template; db-dependent
     # Apparently, mysql's castable types are very limited and have

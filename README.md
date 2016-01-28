@@ -137,6 +137,7 @@ Contributors
 - [cihann](https://github.com/cihann)
 - [wetneb](https://github.com/wetneb)
 - [tatterdemalion](https://github.com/tatterdemalion)
+- [gabriel-laet](https://github.com/gabriel-laet)
 
 TODO
 ==================================
