@@ -5,7 +5,7 @@ import random
 from django.test import TestCase
 from django.utils import timezone
 
-from .models import Person
+from .models import Person, Role
 from .fixtures import create_fixtures
 
 
@@ -173,6 +173,21 @@ class BulkUpdateTests(TestCase):
         for person1, person2 in zip(people, people2):
             self.assertEqual(person1.age, person2.age)
             self.assertNotEqual(person1.height, person2.height)
+
+    def test_update_foreign_key_fields(self):
+        roles = [Role.objects.create(code=1), Role.objects.create(code=2)]
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age += 1
+            person.height += Decimal('0.01')
+            person.role = roles[0] if idx % 2 == 0 else roles[1]
+        Person.objects.bulk_update(people)
+
+        people2 = Person.objects.order_by('pk').all()
+        for person1, person2 in zip(people, people2):
+            self.assertEqual(person1.role.code, person2.role.code)
+            self.assertEqual(person1.age, person2.age)
+            self.assertEqual(person1.height, person2.height)
 
     def test_exclude_fields(self):
         """

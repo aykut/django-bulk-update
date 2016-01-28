@@ -5,10 +5,15 @@ from jsonfield import JSONField
 from bulk_update.manager import BulkUpdateManager
 
 
+class Role(models.Model):
+    code = models.IntegerField()
+
+
 class Person(models.Model):
     """
         test model
     """
+    role = models.ForeignKey(Role, null=True)
     big_age = models.BigIntegerField()
     comma_separated_age = models.CommaSeparatedIntegerField(max_length=255)
     age = models.IntegerField()

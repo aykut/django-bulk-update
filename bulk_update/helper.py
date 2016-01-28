@@ -55,7 +55,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         pk_field = meta.pk.name
 
     exclude_fields = exclude_fields or []
-    update_fields = update_fields or meta.get_all_field_names()
+    update_fields = update_fields or [f.attname for f in meta.fields]
     fields = [
         f for f in meta.fields
         if ((not isinstance(f, models.AutoField))
