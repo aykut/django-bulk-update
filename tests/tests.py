@@ -308,3 +308,20 @@ class BulkUpdateTests(TestCase):
         Update one sized list, check if have a syntax error for some db backends.
         """
         Person.objects.bulk_update(Person.objects.filter(name='Mike'))
+
+    def test_wrong_field_names(self):
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.big_age = idx + 27
+        self.assertRaises(TypeError, Person.objects.bulk_update, people, update_fields=['somecolumn', 'name'])
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.big_age = idx + 27
+        self.assertRaises(TypeError, Person.objects.bulk_update, people, exclude_fields=['somecolumn'])
+
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.big_age = idx + 27
+        self.assertRaises(TypeError, Person.objects.bulk_update, people,
+                          update_fields=['somecolumn'], exclude_fields=['someothercolumn'])

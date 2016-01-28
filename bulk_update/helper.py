@@ -32,6 +32,18 @@ def grouper(iterable, size):
         yield chunk
 
 
+def validate_fields(meta, fields):
+    meta_fields = [f.attname for f in meta.fields]
+    meta_fields += [f[:-3] for f in meta_fields if f.endswith('_id')]
+    invalid_fields = []
+    for field in fields or []:
+        if field not in meta_fields:
+            invalid_fields.append(field)
+    if invalid_fields:
+        raise TypeError(u'These fields are not present in '
+                        'current meta: {}'.format(', '.join(invalid_fields)))
+
+
 def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 using='default', batch_size=None, pk_field='pk'):
     assert batch_size is None or batch_size > 0
@@ -56,6 +68,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
     exclude_fields = exclude_fields or []
     update_fields = update_fields or [f.attname for f in meta.fields]
+    validate_fields(meta, update_fields + exclude_fields)
     fields = [
         f for f in meta.fields
         if ((not isinstance(f, models.AutoField))
