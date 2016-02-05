@@ -325,3 +325,16 @@ class BulkUpdateTests(TestCase):
             person.big_age = idx + 27
         self.assertRaises(TypeError, Person.objects.bulk_update, people,
                           update_fields=['somecolumn'], exclude_fields=['someothercolumn'])
+
+    def test_batch_size(self):
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age += 1
+            person.height += Decimal('0.01')
+        updated_obj_count = Person.objects.bulk_update(people, batch_size=1)
+        self.assertEqual(updated_obj_count, len(people))
+
+        people2 = Person.objects.order_by('pk').all()
+        for person1, person2 in zip(people, people2):
+            self.assertEqual(person1.age, person2.age)
+            self.assertEqual(person1.height, person2.height)

@@ -104,6 +104,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     quote_mark = '"' if 'mysql' not in vendor else '`'
     case_clause_template = case_clause_template.replace('"', quote_mark)
 
+    lenpks = 0
     for objs_batch in grouper(objs, batch_size):
         pks = []
         case_clauses = {}
@@ -167,8 +168,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 .format(
                     dbtable=dbtable, values=values, pkcolumn=pkcolumn,
                     in_clause_sql=in_clause_sql))
-            lenpks = len(pks)
+            lenpks += len(pks)
             del values, pks
 
             connection.cursor().execute(sql, parameters)
-            return lenpks
+    return lenpks
