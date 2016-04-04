@@ -4,10 +4,12 @@ from .helper import bulk_update
 
 
 class BulkUpdateQuerySet(models.QuerySet):
-    def bulk_update(self, objs, update_fields=None, exclude_fields=None):
+    def bulk_update(self, objs, update_fields=None, exclude_fields=None, batch_size=None):
         self._for_write = True
-        bulk_update(objs, update_fields=update_fields,
-                    exclude_fields=exclude_fields, using=self.db)
+        return bulk_update(
+            objs, update_fields=update_fields,
+            exclude_fields=exclude_fields, using=self.db,
+            batch_size=batch_size)
 
 
 class BulkUpdateManager(BaseManager.from_queryset(BulkUpdateQuerySet)):
