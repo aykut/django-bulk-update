@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models.manager import BaseManager
+from django.db.models.manager import Manager
 from .helper import bulk_update
 
 
@@ -12,5 +12,5 @@ class BulkUpdateQuerySet(models.QuerySet):
             batch_size=batch_size)
 
 
-class BulkUpdateManager(BaseManager.from_queryset(BulkUpdateQuerySet)):
+class BulkUpdateManager(Manager.from_queryset(BulkUpdateQuerySet)):
     pass
