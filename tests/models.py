@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.db import models
 
 from jsonfield import JSONField
@@ -6,7 +8,10 @@ from bulk_update.manager import BulkUpdateManager
 
 
 class Role(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid4)
     code = models.IntegerField()
+
+    objects = BulkUpdateManager()
 
 
 class Person(models.Model):

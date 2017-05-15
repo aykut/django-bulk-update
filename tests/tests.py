@@ -338,3 +338,26 @@ class BulkUpdateTests(TestCase):
         for person1, person2 in zip(people, people2):
             self.assertEqual(person1.age, person2.age)
             self.assertEqual(person1.height, person2.height)
+
+    def test_uuid_pk(self):
+        """
+        Test 'bulk_update' with a Role model, whose pk is an uuid.
+        """
+
+        # create
+        Role.objects.bulk_create([Role(code=c) for c in range(20, 30)])
+
+        # set
+        roles = Role.objects.order_by('pk').all()
+        for idx, role in enumerate(roles):
+            role.code = idx * 11
+
+        # update
+        Role.objects.bulk_update(roles, update_fields=['code'])
+
+        # check
+        roles = Role.objects.order_by('pk').all()
+        for idx, role in enumerate(roles):
+            saved_value = role.code
+            expected_value = idx * 11
+            self.assertEqual(saved_value, expected_value)
