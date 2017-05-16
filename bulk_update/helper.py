@@ -53,10 +53,12 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         if not objs.exists():
             return
         batch_size = batch_size or objs.count()
+        if objs.count() == 0: return
     else:
         if not objs:
             return
         batch_size = batch_size or len(objs)
+        if len(objs) == 0: return
 
     connection = connections[using]
     if meta is None:
