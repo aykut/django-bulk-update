@@ -121,7 +121,7 @@ Bulk update performance: 7.05. Dummy update performance: 373.12. Speedup: 52.90.
 
 Requirements
 ==================================
-- Django 1.2+
+- Django 1.8+
 
 Contributors
 ==================================

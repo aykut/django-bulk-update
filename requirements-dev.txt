@@ -1,5 +1,5 @@
 # Use "pip install -r requirements.txt"
-Django>=1.2
+Django>=1.8
 dj_database_url==0.4.2
 jsonfield==2.0.1
 six==1.10.0

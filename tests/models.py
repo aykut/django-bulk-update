@@ -4,11 +4,6 @@ from uuid import uuid4
 
 from bulk_update.manager import BulkUpdateManager
 
-try:
-    from django.db.models import UUIDField
-except ImportError:
-    from uuidfield import UUIDField
-
 
 class Role(models.Model):
     code = models.IntegerField()
@@ -56,7 +51,7 @@ class Person(models.Model):
 
 
 class PersonUUID(models.Model):
-    uuid = UUIDField(primary_key=True, default=uuid4)
+    uuid = models.UUIDField(primary_key=True, default=uuid4)
     age = models.IntegerField()
 
     objects = BulkUpdateManager()

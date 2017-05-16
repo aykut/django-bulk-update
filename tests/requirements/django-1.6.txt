@@ -1,3 +1,0 @@
--r requirements_base.txt
-django>=1.6,<1.7
-django-uuidfield==0.5.0
