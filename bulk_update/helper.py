@@ -7,8 +7,18 @@ import itertools
 
 from django.db import connections, models
 from django.db.models.query import QuerySet
-
-
+"""adding the following to allow Bulk_update to be ran with scripts that are standalone 
+(aka not being triggered by webserver or django-admin.py)
+See: https://docs.djangoproject.com/en/1.8/topics/settings/#calling-django-setup-is-required-for-standalone-django-usage
+"""
+import django
+from django.utils.version import get_version
+## need Version check - if Django version >= 1.8 then we need the following code due to 1.8 changes.
+if django.VERSION[1] > 6:
+    #call django.setup() to properly assign models. Prevents the 'Models are not loaded' error
+    django.setup()
+    
+    
 def _get_db_type(field, connection):
     if isinstance(field, (models.PositiveSmallIntegerField,
                           models.PositiveIntegerField)):
