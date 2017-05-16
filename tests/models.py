@@ -2,7 +2,7 @@ from django.db import models
 from jsonfield import JSONField
 from uuid import uuid4
 
-from bulk_update.manager import BulkUpdateManager
+from django_bulk_update.manager import BulkUpdateManager
 
 
 class Role(models.Model):
