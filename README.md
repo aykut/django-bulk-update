@@ -138,6 +138,7 @@ Contributors
 - [wetneb](https://github.com/wetneb)
 - [tatterdemalion](https://github.com/tatterdemalion)
 - [gabriel-laet](https://github.com/gabriel-laet)
+- [arnau126](https://github.com/arnau126)
 
 TODO
 ==================================
