@@ -5,7 +5,7 @@ import random
 from django.test import TestCase
 from django.utils import timezone
 
-from .models import Person, Role
+from .models import Person, Role, PersonUUID
 from .fixtures import create_fixtures
 
 
@@ -338,3 +338,27 @@ class BulkUpdateTests(TestCase):
         for person1, person2 in zip(people, people2):
             self.assertEqual(person1.age, person2.age)
             self.assertEqual(person1.height, person2.height)
+
+    def test_uuid_pk(self):
+        """
+        Test 'bulk_update' with a Role model, whose pk is an uuid.
+        """
+
+        # create
+        PersonUUID.objects.bulk_create(
+            [PersonUUID(age=c) for c in range(20, 30)])
+
+        # set
+        people = PersonUUID.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age = idx * 11
+
+        # update
+        PersonUUID.objects.bulk_update(people, update_fields=['age'])
+
+        # check
+        people = PersonUUID.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            saved_value = person.age
+            expected_value = idx * 11
+            self.assertEqual(saved_value, expected_value)

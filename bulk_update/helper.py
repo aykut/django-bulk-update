@@ -64,7 +64,12 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         meta = objs[0]._meta
 
     if pk_field == 'pk':
-        pk_field = meta.pk.name
+        pk_name = meta.pk.name
+    else:
+        pk_name = pk_field
+
+    pk_field = meta.get_field(pk_name)
+    pk_column = pk_field.column
 
     exclude_fields = exclude_fields or []
     update_fields = update_fields or [f.attname for f in meta.fields]
@@ -92,10 +97,10 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     vendor = connection.vendor
     use_cast = 'mysql' not in vendor and 'sqlite' not in vendor
     if use_cast:
-        case_clause_template = '"{column}" = CAST(CASE "{pkcolumn}" {{when}}'
+        case_clause_template = '"{column}" = CAST(CASE "{pk_column}" {{when}}'
         tail_end_template = 'END AS {type})'
     else:
-        case_clause_template = '"{column}" = (CASE "{pkcolumn}" {{when}}'
+        case_clause_template = '"{column}" = (CASE "{pk_column}" {{when}}'
         tail_end_template = 'END)'
 
     # String escaping in ANSI SQL is done by using double quotes (").
@@ -109,7 +114,9 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         pks = []
         case_clauses = {}
         for obj in objs_batch:
-            pks.append(getattr(obj, pk_field))
+            pk_value = pk_field.get_db_prep_value(getattr(obj, pk_name),
+                                                  connection)
+            pks.append(pk_value)
             for field in fields:
                 column = field.column
 
@@ -125,7 +132,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                     case_clause = {
                         'sql': case_clause_template.format(
                             column=column,
-                            pkcolumn=meta.get_field(pk_field).column),
+                            pk_column=pk_column),
                         'params': [],
                         'type': _get_db_type(field, connection=connection),
                     }
@@ -135,10 +142,9 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                     case_clause['sql'].format(when="WHEN %s THEN %s {when}")
                 )
 
-                case_clause['params'].extend(
-                    [getattr(obj, pk_field),
-                     field.get_db_prep_value(
-                         getattr(obj, field.attname), connection)])
+                value = field.get_db_prep_value(getattr(obj, field.attname),
+                                                connection)
+                case_clause['params'].extend([pk_value, value])
 
         if pks:
             values = ', '.join(
@@ -151,7 +157,6 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
             del case_clauses  # ... memory
 
-            pkcolumn = meta.get_field(pk_field).column
             dbtable = '{0}{1}{0}'.format(quote_mark, meta.db_table)
             # Storytime: apparently (at least for mysql and sqlite), if a
             # non-simple parameter is added (e.g. a tuple), it is
@@ -163,10 +168,10 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             parameters.extend(pks)
 
             sql = (
-                'UPDATE {dbtable} SET {values} WHERE {pkcolumn} '
+                'UPDATE {dbtable} SET {values} WHERE {pk_column} '
                 'in {in_clause_sql}'
                 .format(
-                    dbtable=dbtable, values=values, pkcolumn=pkcolumn,
+                    dbtable=dbtable, values=values, pk_column=pk_column,
                     in_clause_sql=in_clause_sql))
             lenpks += len(pks)
             del values, pks

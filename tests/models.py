@@ -1,8 +1,13 @@
 from django.db import models
-
 from jsonfield import JSONField
+from uuid import uuid4
 
 from bulk_update.manager import BulkUpdateManager
+
+try:
+    from django.db.models import UUIDField
+except ImportError:
+    from uuidfield import UUIDField
 
 
 class Role(models.Model):
@@ -46,5 +51,12 @@ class Person(models.Model):
 
     default = models.IntegerField(null=True, blank=True,
                                   help_text="A reserved keyword")
+
+    objects = BulkUpdateManager()
+
+
+class PersonUUID(models.Model):
+    uuid = UUIDField(primary_key=True, default=uuid4)
+    age = models.IntegerField()
 
     objects = BulkUpdateManager()
