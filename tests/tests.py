@@ -2,6 +2,8 @@ from datetime import date, time, timedelta
 from decimal import Decimal
 import random
 
+from django.db.models import F, Func, Value
+from django.db.models.functions import Concat
 from django.test import TestCase
 from django.utils import timezone
 
@@ -295,19 +297,22 @@ class BulkUpdateTests(TestCase):
         """
         Update no elements, passed as a queryset
         """
-        Person.objects.bulk_update(Person.objects.filter(name="Aceldotanrilsteucsebces ECSbd (funny name, isn't it?)"))
+        people = Person.objects.filter(name="Aceldotanrilsteucsebces ECSbd")
+        Person.objects.bulk_update(people)
 
     def test_one_sized_list(self):
         """
         Update one sized list, check if have a syntax error for some db backends.
         """
-        Person.objects.bulk_update(Person.objects.all()[:1])
+        people = Person.objects.all()[:1]
+        Person.objects.bulk_update(list(people))
 
     def test_one_sized_queryset(self):
         """
         Update one sized list, check if have a syntax error for some db backends.
         """
-        Person.objects.bulk_update(Person.objects.filter(name='Mike'))
+        people = Person.objects.filter(name='Mike')
+        Person.objects.bulk_update(people)
 
     def test_wrong_field_names(self):
         people = Person.objects.order_by('pk').all()
@@ -341,7 +346,7 @@ class BulkUpdateTests(TestCase):
 
     def test_uuid_pk(self):
         """
-        Test 'bulk_update' with a Role model, whose pk is an uuid.
+        Test 'bulk_update' with a model whose pk is an uuid.
         """
 
         # create
@@ -361,4 +366,87 @@ class BulkUpdateTests(TestCase):
         for idx, person in enumerate(people):
             saved_value = person.age
             expected_value = idx * 11
+            self.assertEqual(saved_value, expected_value)
+
+    def test_F_expresion(self):
+
+        # initialize
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age = idx*10
+            person.save()
+
+        # set
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age = F('age') - idx
+
+        # update
+        Person.objects.bulk_update(people)
+
+        # check
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            saved_value = person.age
+            expected_value = idx*10 - idx
+            self.assertEqual(saved_value, expected_value)
+
+    def test_Func_expresion(self):
+
+        # initialize
+        ini_values = 'aA', 'BB', '', 'cc', '12'
+        people = Person.objects.order_by('pk').all()
+        for value, person in zip(ini_values, people):
+            person.name = value
+            person.text = value*2
+            person.save()
+
+        # set
+        people = Person.objects.order_by('pk').all()
+        for person in people:
+            person.name = Func(F('name'), function='UPPER')
+            person.text = Func(F('text'), function='LOWER')
+
+        # update
+        Person.objects.bulk_update(people)
+
+        # check
+        people = Person.objects.order_by('pk').all()
+
+        expected_values = 'AA', 'BB', '', 'CC', '12'
+        for expected_value, person in zip(expected_values, people):
+            saved_value = person.name
+            self.assertEqual(saved_value, expected_value)
+
+        expected_values = 'aaaa', 'bbbb', '', 'cccc', '1212'
+        for expected_value, person in zip(expected_values, people):
+            saved_value = person.text
+            self.assertEqual(saved_value, expected_value)
+
+    def test_Concat_expresion(self):
+
+        # initialize
+        ini_values_1 = 'a', 'b', 'c', 'd', 'e'
+        ini_values_2 = 'v', 'w', 'x', 'y', 'z'
+
+        people = Person.objects.order_by('pk').all()
+        for value1, value2, person in zip(ini_values_1, ini_values_2, people):
+            person.slug = value1
+            person.name = value2
+            person.save()
+
+        # set
+        people = Person.objects.order_by('pk').all()
+        for person in people:
+            person.text = Concat(F('slug'), Value('@'), F('name'))
+
+        # update
+        Person.objects.bulk_update(people)
+
+        # check
+        people = Person.objects.order_by('pk').all()
+
+        expected_values = 'a@v', 'b@w', 'c@x', 'd@y', 'e@z'
+        for expected_value, person in zip(expected_values, people):
+            saved_value = person.text
             self.assertEqual(saved_value, expected_value)

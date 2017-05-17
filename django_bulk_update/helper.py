@@ -2,13 +2,13 @@
 """
 Main module with the bulk_update function.
 """
-
 import itertools
 
 from collections import defaultdict
 
 from django.db import connections, models
 from django.db.models.query import QuerySet
+from django.db.models.sql import UpdateQuery
 
 
 def _get_db_type(field, connection):
@@ -20,14 +20,27 @@ def _get_db_type(field, connection):
     return field.db_type(connection)
 
 
-def _get_db_prep_value(obj, field, connection):
-    return field.get_db_prep_value(getattr(obj, field.attname), connection)
+def _as_sql(obj, field, query, compiler, connection):
+    value = getattr(obj, field.attname)
+
+    if hasattr(value, 'resolve_expression'):
+        value = value.resolve_expression(query, allow_joins=False, for_save=True)
+    else:
+        value = field.get_db_prep_save(value, connection=connection)
+
+    placeholder = '%s'
+
+    if hasattr(value, 'as_sql'):
+        placeholder, value = value.as_sql(compiler, connection)
+
+    return value, placeholder
 
 
 def flatten(l):
     """
     Flat nested list of lists into a single list.
     """
+    l = [item if isinstance(item, (list, tuple)) else [item] for item in l]
     return [item for sublist in l for item in sublist]
 
 
@@ -75,6 +88,9 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         # TODO: account for iterables
         meta = objs[0]._meta
 
+    query = UpdateQuery(meta.model)
+    compiler = connection.ops.compiler(query.compiler)(query, connection, using)
+
     if pk_field == 'pk':
         pk_field = meta.get_field(meta.pk.name)
     else:
@@ -110,32 +126,35 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     else:
         template = '"{column}" = (CASE "{pk_column}" {cases}END)'
 
-    case_template = "WHEN %s THEN %s "
+    case_template = "WHEN %s THEN {} "
 
     lenpks = 0
     for objs_batch in grouper(objs, batch_size):
 
         pks = []
         parameters = defaultdict(list)
+        placeholders = defaultdict(list)
 
         for obj in objs_batch:
 
-            pk_value = _get_db_prep_value(obj, pk_field, connection)
+            pk_value, _ = _as_sql(obj, pk_field, query, compiler, connection)
             pks.append(pk_value)
 
             for field in fields:
-                value = _get_db_prep_value(obj, field, connection)
-                parameters[field].extend([pk_value, value])
+                value, placeholder = _as_sql(obj, field, query, compiler, connection)
+                parameters[field].extend(flatten([pk_value, value]))
+                placeholders[field].append(placeholder)
 
         if pks:
 
             n_pks = len(pks)
+            cases = case_template*n_pks
 
             values = ', '.join(
                 template.format(
                     column=field.column,
                     pk_column=pk_field.column,
-                    cases=case_template*n_pks,
+                    cases=cases.format(*placeholders[field]),
                     type=_get_db_type(field, connection=connection),
                 )
                 for field in parameters.keys()
@@ -160,8 +179,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             del values
 
             # String escaping in ANSI SQL is done by using double quotes (").
-            # Unfortunately, this escaping method is not portable to MySQL, unless it
-            # is set in ANSI compatibility mode.
+            # Unfortunately, this escaping method is not portable to MySQL,
+            # unless it is set in ANSI compatibility mode.
             if 'mysql' in vendor:
                 sql = sql.replace('"', '`')
 
