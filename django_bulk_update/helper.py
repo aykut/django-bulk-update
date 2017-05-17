@@ -5,6 +5,8 @@ Main module with the bulk_update function.
 
 import itertools
 
+from collections import defaultdict
+
 from django.db import connections, models
 from django.db.models.query import QuerySet
 
@@ -15,8 +17,18 @@ def _get_db_type(field, connection):
         # integer CHECK ("points" >= 0)'
         return field.db_type(connection).split(' ', 1)[0]
 
-    res = field.db_type(connection)
-    return res
+    return field.db_type(connection)
+
+
+def _get_db_prep_value(obj, field, connection):
+    return field.get_db_prep_value(getattr(obj, field.attname), connection)
+
+
+def flatten(l):
+    """
+    Flat nested list of lists into a single list.
+    """
+    return [item for sublist in l for item in sublist]
 
 
 def grouper(iterable, size):
@@ -64,12 +76,9 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         meta = objs[0]._meta
 
     if pk_field == 'pk':
-        pk_name = meta.pk.name
+        pk_field = meta.get_field(meta.pk.name)
     else:
-        pk_name = pk_field
-
-    pk_field = meta.get_field(pk_name)
-    pk_column = pk_field.column
+        pk_field = meta.get_field(pk_field)
 
     exclude_fields = exclude_fields or []
     update_fields = update_fields or [f.attname for f in meta.fields]
@@ -97,84 +106,67 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     vendor = connection.vendor
     use_cast = 'mysql' not in vendor and 'sqlite' not in vendor
     if use_cast:
-        case_clause_template = '"{column}" = CAST(CASE "{pk_column}" {{when}}'
-        tail_end_template = 'END AS {type})'
+        template = '"{column}" = CAST(CASE "{pk_column}" {cases}END AS {type})'
     else:
-        case_clause_template = '"{column}" = (CASE "{pk_column}" {{when}}'
-        tail_end_template = 'END)'
+        template = '"{column}" = (CASE "{pk_column}" {cases}END)'
 
-    # String escaping in ANSI SQL is done by using double quotes (").
-    # Unfortunately, this escaping method is not portable to MySQL, unless it
-    # is set in ANSI compatibility mode.
-    quote_mark = '"' if 'mysql' not in vendor else '`'
-    case_clause_template = case_clause_template.replace('"', quote_mark)
+    case_template = "WHEN %s THEN %s "
 
     lenpks = 0
     for objs_batch in grouper(objs, batch_size):
+
         pks = []
-        case_clauses = {}
+        parameters = defaultdict(list)
+
         for obj in objs_batch:
-            pk_value = pk_field.get_db_prep_value(getattr(obj, pk_name),
-                                                  connection)
+
+            pk_value = _get_db_prep_value(obj, pk_field, connection)
             pks.append(pk_value)
+
             for field in fields:
-                column = field.column
-
-                # Synopsis: make sure the column-specific 'case'
-                # exists and then append the obj-specific values to
-                # it in a tricky way (leaving ' {when}' at the end).
-                # TODO?: For speed, use a list to be ''-joined later,
-                # instead? Or a bytearray.
-                # TODO: optimise (getitem+setitem vs. get + setitem)
-                try:
-                    case_clause = case_clauses[column]
-                except KeyError:
-                    case_clause = {
-                        'sql': case_clause_template.format(
-                            column=column,
-                            pk_column=pk_column),
-                        'params': [],
-                        'type': _get_db_type(field, connection=connection),
-                    }
-                    case_clauses[column] = case_clause
-
-                case_clause['sql'] = (
-                    case_clause['sql'].format(when="WHEN %s THEN %s {when}")
-                )
-
-                value = field.get_db_prep_value(getattr(obj, field.attname),
-                                                connection)
-                case_clause['params'].extend([pk_value, value])
+                value = _get_db_prep_value(obj, field, connection)
+                parameters[field].extend([pk_value, value])
 
         if pks:
+
+            n_pks = len(pks)
+
             values = ', '.join(
-                v['sql'].format(when=tail_end_template.format(type=v['type']))
-                for v in case_clauses.values())
-            parameters = [
-                param
-                for clause in case_clauses.values()
-                for param in clause['params']]
+                template.format(
+                    column=field.column,
+                    pk_column=pk_field.column,
+                    cases=case_template*n_pks,
+                    type=_get_db_type(field, connection=connection),
+                )
+                for field in parameters.keys()
+            )
 
-            del case_clauses  # ... memory
-
-            dbtable = '{0}{1}{0}'.format(quote_mark, meta.db_table)
-            # Storytime: apparently (at least for mysql and sqlite), if a
-            # non-simple parameter is added (e.g. a tuple), it is
-            # processed with force_text and, accidentally, manages to
-            # be a valid syntax... unless there's only one element.
-            # So, to fix this, expand the ' in %s' with the parameters' string
-            in_clause_sql = '({})'.format(
-                ', '.join(itertools.repeat('%s', len(pks))))
+            parameters = flatten(parameters.values())
             parameters.extend(pks)
+            del pks
 
-            sql = (
-                'UPDATE {dbtable} SET {values} WHERE {pk_column} '
-                'in {in_clause_sql}'
-                .format(
-                    dbtable=dbtable, values=values, pk_column=pk_column,
-                    in_clause_sql=in_clause_sql))
-            lenpks += len(pks)
-            del values, pks
+            dbtable = '"{}"'.format(meta.db_table)
+
+            in_clause = '"{pk_column}" in ({pks})'.format(
+                pk_column=pk_field.column,
+                pks=', '.join(itertools.repeat('%s', n_pks)),
+            )
+
+            sql = 'UPDATE {dbtable} SET {values} WHERE {in_clause}'.format(
+                dbtable=dbtable,
+                values=values,
+                in_clause=in_clause,
+            )
+            del values
+
+            # String escaping in ANSI SQL is done by using double quotes (").
+            # Unfortunately, this escaping method is not portable to MySQL, unless it
+            # is set in ANSI compatibility mode.
+            if 'mysql' in vendor:
+                sql = sql.replace('"', '`')
+
+            lenpks += n_pks
 
             connection.cursor().execute(sql, parameters)
+
     return lenpks
