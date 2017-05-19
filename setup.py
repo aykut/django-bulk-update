@@ -7,7 +7,7 @@ README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-version = "1.2"
+version = "1.2.0"
 
 if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
@@ -24,6 +24,9 @@ setup(
     version=version,
     packages=find_packages(),
     include_package_data=True,
+    install_requires=[
+        'Django>=1.8',
+    ],
     description='Bulk update using one query over Django ORM.',
     long_description=README,
     url='https://github.com/aykut/django-bulk-update',

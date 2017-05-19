@@ -1,0 +1,2 @@
+-r requirements_base.txt
+django>=1.10,<1.11

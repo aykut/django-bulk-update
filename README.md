@@ -18,7 +18,7 @@ With manager:
 
 ```python
 import random
-from bulk_update.manager import BulkUpdateManager
+from django_bulk_update.manager import BulkUpdateManager
 from tests.models import Person
 
 class Person(models.Model):
@@ -41,7 +41,7 @@ With helper:
 
 ```python
 import random
-from bulk_update.helper import bulk_update
+from django_bulk_update.helper import bulk_update
 from tests.models import Person
 
 random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
@@ -85,7 +85,7 @@ In [8]: create_fixtures(1000)
 
 In [9]: setup='''
 import random
-from bulk_update import helper
+from django_bulk_update import helper
 from tests.models import Person
 random_names = ['Walter', 'The Dude', 'Donny', 'Jesus']
 ids = list(Person.objects.values_list('id', flat=True)[:1000])
@@ -121,7 +121,7 @@ Bulk update performance: 7.05. Dummy update performance: 373.12. Speedup: 52.90.
 
 Requirements
 ==================================
-- Django 1.2+
+- Django 1.8+
 
 Contributors
 ==================================

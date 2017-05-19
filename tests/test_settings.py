@@ -13,5 +13,5 @@ DATABASES = {
     'default': DB,
 }
 
-INSTALLED_APPS = ('bulk_update', 'tests',)
+INSTALLED_APPS = ('django_bulk_update', 'tests',)
 MIDDLEWARE_CLASSES = ()
