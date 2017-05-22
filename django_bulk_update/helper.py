@@ -47,9 +47,6 @@ def flatten(l):
 def grouper(iterable, size):
     # http://stackoverflow.com/a/8991553
     it = iter(iterable)
-    if size <= 0:
-        yield it
-        return
     while True:
         chunk = tuple(itertools.islice(it, size))
         if not chunk:
