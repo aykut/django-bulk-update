@@ -96,8 +96,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     else:
         pk_field = meta.get_field(pk_field)
 
-    exclude_fields = exclude_fields or []
-    update_fields = update_fields or [f.attname for f in meta.fields]
+    exclude_fields = list(exclude_fields) or []
+    update_fields = list(update_fields) or [f.attname for f in meta.fields]
     validate_fields(meta, update_fields + exclude_fields)
     fields = [
         f for f in meta.fields
