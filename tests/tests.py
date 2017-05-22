@@ -274,6 +274,21 @@ class BulkUpdateTests(TestCase):
             self.assertNotEqual(person1.age, person2.age)
             self.assertEqual(person1.height, person2.height)
 
+    def test_exclude_fields_with_tuple_exclude_fields(self):
+        """
+            Only the fields not in "exclude_fields" are updated
+        """
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age += 1
+            person.height += Decimal('0.01')
+        Person.objects.bulk_update(people, exclude_fields=('age',))
+
+        people2 = Person.objects.order_by('pk').all()
+        for person1, person2 in zip(people, people2):
+            self.assertNotEqual(person1.age, person2.age)
+            self.assertEqual(person1.height, person2.height)
+
     def test_object_list(self):
         """
           Pass in a list instead of a queryset for bulk updating
