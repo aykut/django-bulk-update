@@ -47,7 +47,15 @@ class Person(models.Model):
     default = models.IntegerField(null=True, blank=True,
                                   help_text="A reserved keyword")
 
+    jobs = models.ManyToManyField(
+        'Company', blank=True, related_name='workers')
+
     objects = BulkUpdateManager()
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=50)
+    president = models.ForeignKey(Person, related_name='companies')
 
 
 class PersonUUID(models.Model):
