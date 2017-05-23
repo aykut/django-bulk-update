@@ -1,5 +1,15 @@
-1.2.0 (upcoming)
+Upcoming
 - Geometry Types support
+
+2.1.0
+- Allow to pass `update_fields` and `exclude_fields` arguments as tuples.
+- If `update_fields` is not specified, update not-deferred fields only.
+
+2.0.0
+- Rename package from `bulk_update` to `django_bulk_update`.
+- Drop support for `django<1.8`.
+- Allow to use django expressions like `F expression` or `Func expression`.
+- Make `bulk_update` work for models whose `pk` is an UUID or a ForeignKey.
 
 1.1.1
 - Use .count() method instead of len for performance reasons (joshblum)
