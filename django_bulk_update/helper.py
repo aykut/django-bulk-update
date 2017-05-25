@@ -28,10 +28,10 @@ def _as_sql(obj, field, query, compiler, connection):
     else:
         value = field.get_db_prep_save(value, connection=connection)
 
-    placeholder = '%s'
-
     if hasattr(value, 'as_sql'):
-        placeholder, value = value.as_sql(compiler, connection)
+        placeholder, value = compiler.compile(value)
+    else:
+        placeholder = '%s'
 
     return value, placeholder
 
@@ -141,7 +141,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
     connection = connections[using]
     query = UpdateQuery(meta.model)
-    compiler = connection.ops.compiler(query.compiler)(query, connection, using)
+    compiler = query.get_compiler(connection=connection)
 
     # The case clause template; db-dependent
     # Apparently, mysql's castable types are very limited and have
