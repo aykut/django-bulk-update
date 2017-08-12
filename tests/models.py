@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from jsonfield import JSONField
 from uuid import uuid4
@@ -61,5 +62,12 @@ class Company(models.Model):
 class PersonUUID(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid4)
     age = models.IntegerField()
+
+    objects = BulkUpdateManager()
+
+
+class Brand(models.Model):
+    name = models.CharField(max_length=128, unique=True, db_index=True)
+    codes = ArrayField(models.CharField(max_length=64), default=['code_1'])
 
     objects = BulkUpdateManager()

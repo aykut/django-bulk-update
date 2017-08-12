@@ -30,17 +30,19 @@ def _as_sql(obj, field, query, compiler, connection):
 
     if hasattr(value, 'as_sql'):
         placeholder, value = compiler.compile(value)
+        if isinstance(value, list):
+            value = tuple(value)
     else:
         placeholder = '%s'
 
     return value, placeholder
 
 
-def flatten(l):
+def flatten(l, types=(list, float)):
     """
     Flat nested list of lists into a single list.
     """
-    l = [item if isinstance(item, (list, tuple)) else [item] for item in l]
+    l = [item if isinstance(item, types) else [item] for item in l]
     return [item for sublist in l for item in sublist]
 
 
@@ -176,7 +178,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
             for field in loaded_fields:
                 value, placeholder = _as_sql(obj, field, query, compiler, connection)
-                parameters[field].extend(flatten([pk_value, value]))
+                parameters[field].extend(flatten([pk_value, value], types=tuple))
                 placeholders[field].append(placeholder)
 
         values = ', '.join(
@@ -189,7 +191,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             for field in parameters.keys()
         )
 
-        parameters = flatten(parameters.values())
+        parameters = flatten(parameters.values(), types=list)
         parameters.extend(pks)
 
         n_pks = len(pks)

@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from django_bulk_update import helper
 
-from .models import Person, Role, PersonUUID
+from .models import Person, Role, PersonUUID, Brand
 from .fixtures import create_fixtures
 
 
@@ -116,6 +116,10 @@ class BulkUpdateTests(TestCase):
     def test_float_field(self):
         fn = lambda idx: float(idx) * 2.0
         self._test_field('float_height',  fn)
+
+    def test_data_field(self):
+        fn = lambda idx: {'x': idx}
+        self._test_field('data',  fn)
 
     def test_generic_ipaddress_field(self):
         IPS = ['127.0.0.1', '192.0.2.30', '2a02:42fe::4', '10.0.0.1',
@@ -370,11 +374,32 @@ class BulkUpdateTests(TestCase):
             self.assertEqual(person1.age, person2.age)
             self.assertEqual(person1.height, person2.height)
 
+    def test_array_field(self):
+        """
+        Test to 'bulk_update' a postgresql's ArrayField.
+        """
+        Brand.objects.bulk_create([
+            Brand(name='b1', codes=['a', 'b']),
+            Brand(name='b2', codes=['x']),
+            Brand(name='b3', codes=['x', 'y', 'z']),
+            Brand(name='b4', codes=['1', '2']),
+        ])
+
+        brands = Brand.objects.all()
+
+        for brand in brands:
+            brand.codes.append(brand.codes[0]*2)
+
+        Brand.objects.bulk_update(brands)
+
+        expected = ['aa', 'xx', 'xx', '11']
+        for value, brand in zip(expected, brands):
+            self.assertEqual(brand.codes[-1], value)
+
     def test_uuid_pk(self):
         """
         Test 'bulk_update' with a model whose pk is an uuid.
         """
-
         # create
         PersonUUID.objects.bulk_create(
             [PersonUUID(age=c) for c in range(20, 30)])
@@ -464,7 +489,7 @@ class BulkUpdateTests(TestCase):
         # set
         people = Person.objects.order_by('pk').all()
         for person in people:
-            person.text = Concat(F('slug'), Value('@'), F('name'))
+            person.text = Concat(F('slug'), Value('@'), F('name'), Value('|'))
 
         # update
         Person.objects.bulk_update(people)
@@ -472,7 +497,7 @@ class BulkUpdateTests(TestCase):
         # check
         people = Person.objects.order_by('pk').all()
 
-        expected_values = 'a@v', 'b@w', 'c@x', 'd@y', 'e@z'
+        expected_values = 'a@v|', 'b@w|', 'c@x|', 'd@y|', 'e@z|'
         for expected_value, person in zip(expected_values, people):
             saved_value = person.text
             self.assertEqual(saved_value, expected_value)
