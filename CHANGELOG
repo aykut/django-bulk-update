@@ -1,6 +1,10 @@
 Upcoming
 - Geometry Types support
 
+2.2.0
+- Make bulk_update work with postgresql's ArrayField
+- Fix that makes the manager work for write db correctly
+
 2.1.0
 - Allow to pass `update_fields` and `exclude_fields` arguments as tuples.
 - If `update_fields` is not specified, update not-deferred fields only.
