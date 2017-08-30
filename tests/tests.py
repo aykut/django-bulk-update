@@ -13,6 +13,56 @@ from .models import Person, Role, PersonUUID, Brand
 from .fixtures import create_fixtures
 
 
+class BulkUpdateCreateTests(TestCase):
+
+    def setUp(self):
+        self.now = timezone.now().replace(microsecond=0)  # mysql doesn't do microseconds. # NOQA
+        self.date = date(2015, 3, 28)
+        self.time = time(13, 0)
+        create_fixtures()
+
+    def _test_field(self, field, idx_to_value_function):
+        '''
+        Helper to do repeative simple tests on one field.
+        '''
+
+        # set
+        set_people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(set_people):
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        # update
+        Person.objects.bulk_update_or_create(set_people, update_fields=[field])
+
+        # check
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            saved_value = getattr(person, field)
+            expected_value = idx_to_value_function(idx)
+            self.assertEqual(saved_value, expected_value)
+
+    def test_boolean_field(self):
+        fn = lambda idx: [True, False][idx % 2]
+        self._test_field('certified',  fn)
+
+    def test_needs_insert(self):
+        people = Person.objects.order_by('pk').all()
+        for person in people:
+            person.certified = False
+
+        extra = create_fixtures(1, create=False)
+        extra[0].certified = True
+        people = list(people) + extra
+
+        Person.objects.bulk_update_or_create(people, update_fields=['certified'])
+
+        people = Person.objects.order_by('pk').all()
+        last = people.last()
+        self.assertEqual(len(people), 7)
+        self.assertEqual(last.certified, True)
+
+
 class BulkUpdateTests(TestCase):
 
     def setUp(self):
