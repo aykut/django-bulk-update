@@ -94,9 +94,12 @@ def get_fixtures(n=None):
         yield next(fixtures)
 
 
-def create_fixtures(n=None):
+def create_fixtures(n=None, create=True):
     """
       Wrapper for Person.bulk_create which creates `n` fixtures
     """
-    Person.objects.bulk_create(Person(**person)
-                               for person in get_fixtures(n))
+    if create:
+        Person.objects.bulk_create(Person(**person)
+                                   for person in get_fixtures(n))
+    else:
+        return [Person(**person) for person in get_fixtures(n)]
