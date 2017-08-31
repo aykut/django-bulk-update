@@ -212,7 +212,6 @@ def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=No
 
                 value, _ = _as_sql(obj, field, query, compiler, connection)
 
-
                 if value is None:
                     value = 'NULL'
                 object_row.append(value)
