@@ -221,7 +221,7 @@ def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=No
         unique_columns = ', '.join(['"{}"'.format(field) for field in unique_column_names])
 
         dbtable = '"{}"'.format(meta.db_table)
-        excluded = '{field}=EXCLUDED.{field}'
+        excluded = '"{field}"=EXCLUDED.{field}'
         unique_templ = '{dbtable}.' + excluded
         unique_constraint = ' AND '.join([unique_templ.format(field=field, dbtable=meta.db_table)
                                           for field in unique_column_names])

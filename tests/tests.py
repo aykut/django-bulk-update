@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 from decimal import Decimal
 
 from django.db.models import F, Func, Value
@@ -42,21 +42,152 @@ class BulkUpdateCreateTests(TestCase, BulkAndCreateCommon):
             expected_value = idx_to_value_function(idx)
             self.assertEqual(saved_value, expected_value)
 
-    def test_needs_insert(self):
+    def _test_field_insert(self, field, idx_to_value_function):
+        # set
+        set_people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(set_people):
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        insert_people = create_fixtures(create=False)
+        for idx, person in enumerate(insert_people):
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        all_people = list(set_people) + insert_people
+
+        Person.objects.bulk_update_or_create(all_people, update_fields=[field])
+
         people = Person.objects.order_by('pk').all()
-        for person in people:
-            person.certified = False
+        # create fixtures creates 6 by default
+        self.assertEqual(len(people), 12)
 
-        extra = create_fixtures(1, create=False)
-        extra[0].certified = True
-        people = list(people) + extra
+        created_people = people[len(insert_people):]
+        for idx, person in enumerate(created_people):
+            saved_value = getattr(person, field)
+            expected_value = idx_to_value_function(idx)
+            self.assertEqual(saved_value, expected_value)
 
-        Person.objects.bulk_update_or_create(people, update_fields=['certified'])
+    def test_default_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('default', fn)
 
-        people = Person.objects.order_by('pk').all()
-        last = people.last()
-        self.assertEqual(len(people), 7)
-        self.assertEqual(last.certified, True)
+    def test_big_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('big_age', fn)
+
+    def test_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('age', fn)
+
+    def test_positive_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('positive_age', fn)
+
+    def test_positive_small_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('positive_small_age', fn)
+
+    def test_positive_small_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('positive_small_age', fn)
+
+    def test_small_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('small_age', fn)
+
+    def test_comma_separated_integer_field_insert(self):
+        fn = lambda idx: str(idx) + ',27'
+        self._test_field_insert('comma_separated_age',  fn)
+
+    def test_boolean_field_insert(self):
+        fn = lambda idx: [True, False][idx % 2]
+        self._test_field_insert('certified',  fn)
+
+    def test_null_boolean_field_insert(self):
+        fn = lambda idx: [True, False, None][idx % 3]
+        self._test_field_insert('null_certified',  fn)
+
+    def test_char_field_insert(self):
+        NAMES = ['Walter', 'The Dude', 'Donny', 'Jesus', 'Buddha', 'Clark']
+        fn = lambda idx: NAMES[idx % 5]
+        self._test_field_insert('name',  fn)
+
+    def test_email_field_insert(self):
+        EMAILS = ['walter@mailinator.com', 'thedude@mailinator.com',
+                  'donny@mailinator.com', 'jesus@mailinator.com',
+                  'buddha@mailinator.com', 'clark@mailinator.com']
+        fn = lambda idx: EMAILS[idx % 5]
+        self._test_field_insert('email',  fn)
+
+    def test_file_path_field_insert(self):
+        PATHS = ['/home/dummy.txt', '/Downloads/kitten.jpg',
+                 '/Users/user/fixtures.json', 'dummy.png',
+                 'users.json', '/home/dummy.png']
+        fn = lambda idx: PATHS[idx % 5]
+        self._test_field_insert('file_path',  fn)
+
+    def test_slug_field_insert(self):
+        SLUGS = ['jesus', 'buddha', 'clark', 'the-dude', 'donny', 'walter']
+        fn = lambda idx: SLUGS[idx % 5]
+        self._test_field_insert('slug',  fn)
+
+    def test_text_field_insert(self):
+        TEXTS = ['this is a dummy text', 'dummy text', 'bla bla bla bla bla',
+                 'here is a dummy text', 'dummy', 'bla bla bla']
+        fn = lambda idx: TEXTS[idx % 5]
+        self._test_field_insert('text',  fn)
+
+    def test_url_field_insert(self):
+        URLS = ['docs.djangoproject.com', 'news.ycombinator.com',
+                'https://docs.djangoproject.com', 'https://google.com',
+                'google.com', 'news.ycombinator.com']
+        fn = lambda idx: URLS[idx % 5]
+        self._test_field_insert('url',  fn)
+
+    def test_date_time_field_insert(self):
+        fn = lambda idx: self.now - timedelta(days=1 + idx, hours=1 + idx)
+        self._test_field_insert('date_time',  fn)
+
+    def test_date_field_insert(self):
+        fn = lambda idx: self.date - timedelta(days=1 + idx)
+        self._test_field_insert('date',  fn)
+
+    def test_time_field_insert(self):
+        fn = lambda idx: time(1 + idx, idx)
+        self._test_field_insert('time',  fn)
+
+    def test_decimal_field_insert(self):
+        fn = lambda idx: Decimal('1.%s' % (50 + idx * 7))
+        self._test_field_insert('height',  fn)
+
+    def test_float_field_insert(self):
+        fn = lambda idx: float(idx) * 2.0
+        self._test_field_insert('float_height',  fn)
+
+    def test_data_field_insert(self):
+        fn = lambda idx: {'x': idx}
+        self._test_field_insert('data',  fn)
+
+    def test_generic_ipaddress_field_insert(self):
+        IPS = ['127.0.0.1', '192.0.2.30', '2a02:42fe::4', '10.0.0.1',
+               '8.8.8.8']
+        fn = lambda idx: IPS[idx % 5]
+        self._test_field_insert('remote_addr',  fn)
+
+    def test_image_field_insert(self):
+        IMGS = ['kitten.jpg', 'dummy.png', 'user.json', 'dummy.png', 'foo.gif']
+        fn = lambda idx: IMGS[idx % 5]
+
+        self._test_field_insert('my_file',  fn)
+
+    def test_image_field_my_file_insert(self):
+        IMGS = ['kitten.jpg', 'dummy.png', 'user.json', 'dummy.png', 'foo.gif']
+        fn = lambda idx: IMGS[idx % 5]
+
+        self._test_field_insert('my_file',  fn)
+
+
 
 
 class BulkUpdateTests(TestCase, BulkAndCreateCommon):
