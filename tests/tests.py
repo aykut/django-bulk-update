@@ -671,8 +671,9 @@ class NumQueriesTest(TestCase):
         (as update_fields is empty, no update query will be done)
         """
         people = Person.objects.all()
-        self.assertNumQueries(1, Person.objects.bulk_update,
-                              people, update_fields=[])
+        with self.assertRaises(AssertionError):
+            self.assertNumQueries(0, Person.objects.bulk_update,
+                                  people, update_fields=[])
 
     def test_no_objects(self):
         """
