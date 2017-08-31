@@ -143,10 +143,13 @@ def bulk_update(objs, batch_size=None, update_fields=None, exclude_fields=None,
                 template = get_sql_template(connection.vendor)
                 case_template = "WHEN %s THEN {} "
 
+            loaded_fields = fields or get_fields(update_fields, exclude_fields,
+                                                 meta, obj)
+
             pk_value, _ = _as_sql(obj, pk_field, query, compiler, connection)
             pks.append(pk_value)
 
-            for field in fields:
+            for field in loaded_fields:
                 value, placeholder = _as_sql(obj, field, query,
                                              compiler, connection)
                 parameters[field].extend(flatten([pk_value, value],
