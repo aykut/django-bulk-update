@@ -134,7 +134,10 @@ def bulk_update(objs, batch_size=None, update_fields=None, exclude_fields=None,
         for j, obj in enumerate(chunk):
             if i == 0 and j == 0:
                 meta = obj._meta
-                fields = get_fields(update_fields, exclude_fields, meta, obj)
+                fields = None
+                if update_fields is not None:
+                    fields = get_fields(update_fields, exclude_fields,
+                                        meta, obj)
                 pk_field = get_pk_field(pk_field, meta)
 
                 query = UpdateQuery(meta.model)
