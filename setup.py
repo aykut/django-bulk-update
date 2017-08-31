@@ -7,7 +7,7 @@ README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
-version = "2.2.0"
+version = "2.3.0-RC1"
 
 if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
