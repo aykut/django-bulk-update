@@ -123,6 +123,7 @@ def get_pk_field(pk_field, meta):
 def bulk_update(objs, batch_size=None, update_fields=None, exclude_fields=None,
                 using='default', pk_field='pk'):
     assert batch_size is None or batch_size > 0
+    assert update_fields is None or len(update_fields) > 0
 
     lenpks = 0
     connection = connections[using]
