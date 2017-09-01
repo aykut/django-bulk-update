@@ -1,6 +1,5 @@
 from datetime import date, time, timedelta
 from decimal import Decimal
-import random
 
 from django.db.models import F, Func, Value
 from django.db.models.functions import Concat
@@ -9,38 +8,19 @@ from django.utils import timezone
 
 from django_bulk_update import helper
 
-from .models import Person, Role, PersonUUID, Brand
+from .models import Person, Role, PersonUUID, Brand, Unique, UniqueTogether, UniqueTogetherAndField
 from .fixtures import create_fixtures
 
 
-class BulkUpdateTests(TestCase):
+class BulkAndCreateCommon(object):
 
     def setUp(self):
         self.now = timezone.now().replace(microsecond=0)  # mysql doesn't do microseconds. # NOQA
         self.date = date(2015, 3, 28)
         self.time = time(13, 0)
-        create_fixtures()
 
     def _test_field(self, field, idx_to_value_function):
-        '''
-        Helper to do repeative simple tests on one field.
-        '''
-
-        # set
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            value = idx_to_value_function(idx)
-            setattr(person, field, value)
-
-        # update
-        Person.objects.bulk_update(people, update_fields=[field])
-
-        # check
-        people = Person.objects.order_by('pk').all()
-        for idx, person in enumerate(people):
-            saved_value = getattr(person, field)
-            expected_value = idx_to_value_function(idx)
-            self.assertEqual(saved_value, expected_value)
+        raise NotImplementedError('Implement it in the concrete class')
 
     def test_simple_fields(self):
         fn = lambda idx: idx + 27
@@ -133,6 +113,350 @@ class BulkUpdateTests(TestCase):
 
         self._test_field('image',  fn)
         self._test_field('my_file',  fn)
+
+
+class BulkUpdateCreateTests(TestCase, BulkAndCreateCommon):
+
+    def setUp(self):
+        self.now = timezone.now().replace(microsecond=0)  # mysql doesn't do microseconds. # NOQA
+        self.date = date(2015, 3, 28)
+        self.time = time(13, 0)
+        create_fixtures()
+
+    def _test_field(self, field, idx_to_value_function):
+        '''
+        Helper to do repeative simple tests on one field.
+        '''
+
+        # set
+        set_people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(set_people):
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        # update or create
+        Person.objects.bulk_update_or_create(set_people, update_fields=[field])
+
+        # check
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            saved_value = getattr(person, field)
+            expected_value = idx_to_value_function(idx)
+            self.assertEqual(saved_value, expected_value)
+
+    def _test_field_insert(self, field, idx_to_value_function):
+        # set
+        set_people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(set_people):
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        insert_people = create_fixtures(create=False)
+        for idx, person in enumerate(insert_people):
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        all_people = list(set_people) + insert_people
+
+        Person.objects.bulk_update_or_create(all_people, update_fields=[field])
+
+        people = Person.objects.order_by('pk').all()
+        # create fixtures creates 6 by default
+        self.assertEqual(len(people), 12)
+
+        created_people = people[len(insert_people):]
+        for idx, person in enumerate(created_people):
+            saved_value = getattr(person, field)
+            expected_value = idx_to_value_function(idx)
+            self.assertEqual(saved_value, expected_value)
+
+    def test_default_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('default', fn)
+
+    def test_big_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('big_age', fn)
+
+    def test_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('age', fn)
+
+    def test_positive_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('positive_age', fn)
+
+    def test_positive_small_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('positive_small_age', fn)
+
+    def test_positive_small_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('positive_small_age', fn)
+
+    def test_small_age_field_insert(self):
+        fn = lambda idx: idx + 27
+        self._test_field_insert('small_age', fn)
+
+    def test_comma_separated_integer_field_insert(self):
+        fn = lambda idx: str(idx) + ',27'
+        self._test_field_insert('comma_separated_age',  fn)
+
+    def test_boolean_field_insert(self):
+        fn = lambda idx: [True, False][idx % 2]
+        self._test_field_insert('certified',  fn)
+
+    def test_null_boolean_field_insert(self):
+        fn = lambda idx: [True, False, None][idx % 3]
+        self._test_field_insert('null_certified',  fn)
+
+    def test_char_field_insert(self):
+        NAMES = ['Walter', 'The Dude', 'Donny', 'Jesus', 'Buddha', 'Clark']
+        fn = lambda idx: NAMES[idx % 5]
+        self._test_field_insert('name',  fn)
+
+    def test_email_field_insert(self):
+        EMAILS = ['walter@mailinator.com', 'thedude@mailinator.com',
+                  'donny@mailinator.com', 'jesus@mailinator.com',
+                  'buddha@mailinator.com', 'clark@mailinator.com']
+        fn = lambda idx: EMAILS[idx % 5]
+        self._test_field_insert('email',  fn)
+
+    def test_file_path_field_insert(self):
+        PATHS = ['/home/dummy.txt', '/Downloads/kitten.jpg',
+                 '/Users/user/fixtures.json', 'dummy.png',
+                 'users.json', '/home/dummy.png']
+        fn = lambda idx: PATHS[idx % 5]
+        self._test_field_insert('file_path',  fn)
+
+    def test_slug_field_insert(self):
+        SLUGS = ['jesus', 'buddha', 'clark', 'the-dude', 'donny', 'walter']
+        fn = lambda idx: SLUGS[idx % 5]
+        self._test_field_insert('slug',  fn)
+
+    def test_text_field_insert(self):
+        TEXTS = ['this is a dummy text', 'dummy text', 'bla bla bla bla bla',
+                 'here is a dummy text', 'dummy', 'bla bla bla']
+        fn = lambda idx: TEXTS[idx % 5]
+        self._test_field_insert('text',  fn)
+
+    def test_url_field_insert(self):
+        URLS = ['docs.djangoproject.com', 'news.ycombinator.com',
+                'https://docs.djangoproject.com', 'https://google.com',
+                'google.com', 'news.ycombinator.com']
+        fn = lambda idx: URLS[idx % 5]
+        self._test_field_insert('url',  fn)
+
+    def test_date_time_field_insert(self):
+        fn = lambda idx: self.now - timedelta(days=1 + idx, hours=1 + idx)
+        self._test_field_insert('date_time',  fn)
+
+    def test_date_field_insert(self):
+        fn = lambda idx: self.date - timedelta(days=1 + idx)
+        self._test_field_insert('date',  fn)
+
+    def test_time_field_insert(self):
+        fn = lambda idx: time(1 + idx, idx)
+        self._test_field_insert('time',  fn)
+
+    def test_decimal_field_insert(self):
+        fn = lambda idx: Decimal('1.%s' % (50 + idx * 7))
+        self._test_field_insert('height',  fn)
+
+    def test_float_field_insert(self):
+        fn = lambda idx: float(idx) * 2.0
+        self._test_field_insert('float_height',  fn)
+
+    def test_data_field_insert(self):
+        fn = lambda idx: {'x': idx}
+        self._test_field_insert('data',  fn)
+
+    def test_generic_ipaddress_field_insert(self):
+        IPS = ['127.0.0.1', '192.0.2.30', '2a02:42fe::4', '10.0.0.1',
+               '8.8.8.8']
+        fn = lambda idx: IPS[idx % 5]
+        self._test_field_insert('remote_addr',  fn)
+
+    def test_image_field_insert(self):
+        IMGS = ['kitten.jpg', 'dummy.png', 'user.json', 'dummy.png', 'foo.gif']
+        fn = lambda idx: IMGS[idx % 5]
+
+        self._test_field_insert('my_file',  fn)
+
+    def test_image_field_my_file_insert(self):
+        IMGS = ['kitten.jpg', 'dummy.png', 'user.json', 'dummy.png', 'foo.gif']
+        fn = lambda idx: IMGS[idx % 5]
+
+        self._test_field_insert('my_file',  fn)
+
+    def test_custom_fields(self):
+        Person.objects.all().delete() # removing fixtures
+        people = create_fixtures(create=False)
+
+        values = {}
+        people_dict = {p.name: p for p in people}
+
+        person = people_dict['Mike']
+        person.data = {'name': 'mikey', 'age': 99, 'ex': -99}
+        values[person.name] = {'name': 'mikey', 'age': 99, 'ex': -99}
+
+        person = people_dict['Mary']
+        person.data = {'names': {'name': []}}
+        values[person.name] = {'names': {'name': []}}
+
+        person = people_dict['Pete']
+        person.data = []
+        values[person.name] = []
+
+        person = people_dict['Sandra']
+        person.data = [{'name': 'Pete'}, {'name': 'Mike'}]
+        values[person.name] = [{'name': 'Pete'}, {'name': 'Mike'}]
+
+        person = people_dict['Ash']
+        person.data = {'text': 'bla'}
+        values[person.name] = {'text': 'bla'}
+
+        person = people_dict['Crystal']
+        values[person.name] = person.data
+
+        Person.objects.bulk_update_or_create(people)
+
+        people = Person.objects.all()
+        for person in people:
+            self.assertEqual(person.data, values[person.name])
+
+    def test_insert_foreign_key_fields(self):
+        pass
+
+    def test_insert_foreign_key_fields_explicit(self):
+        # with update field
+        pass
+
+    def test_insert_foreign_key_fields_with_id_suffix(self):
+        pass
+
+    def test_exclude_fields_does_not_affect_insert(self):
+        pass
+
+    def test_batch_size(self):
+        '''update or create should return tuple, updated and created'''
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age += 1
+            person.height += Decimal('0.01')
+
+        person = create_fixtures(1, create=False)
+        people = list(people) + person
+
+        updated, inserted = Person.objects.bulk_update_or_create(people, batch_size=1)
+        self.assertEqual(updated, 6)
+        self.assertEqual(inserted, 1)
+
+        people2 = Person.objects.order_by('pk').all()
+        for person1, person2 in zip(people, people2):
+            self.assertEqual(person1.age, person2.age)
+            self.assertEqual(person1.height, person2.height)
+
+    def test_array_field(self):
+        pass
+
+    def test_uuid_pk_with_insert(self):
+        pass
+
+    def test_insert_with_unique_together_updating(self):
+        data = {
+            'text': 'original text',
+            'pair_part1': 1,
+            'pair_part2': 1
+        }
+
+        UniqueTogether.objects.create(**data)
+
+        new_obj = UniqueTogether(**data)
+        new_obj.text = 'updated text'
+
+        UniqueTogether.objects.bulk_update_or_create([new_obj])
+
+        uniques = UniqueTogether.objects.all()
+        self.assertEquals(len(uniques), 1)
+        self.assertEquals(uniques[0].text, 'updated text')
+
+    def test_insert_with_single_unique(self):
+        Unique.objects.create(unique_integer=1, text='original text')
+
+        new_obj = Unique(unique_integer=1, text='updated text')
+
+        Unique.objects.bulk_update_or_create([new_obj])
+
+        uniques = Unique.objects.all()
+        self.assertEquals(len(uniques), 1)
+        self.assertEquals(uniques[0].text, 'updated text')
+
+    def test_insert_unique_together_more_than_one_with_argument(self):
+        # should fail, unless specified as an argument
+        data = {
+            'unique_integer': 1,
+            'text': 'original text',
+            'pair_part1': 1,
+            'pair_part2': 1
+        }
+        UniqueTogetherAndField.objects.create(**data)
+
+        new_obj = UniqueTogetherAndField(**data)
+        new_obj.text = 'updated text'
+
+        UniqueTogetherAndField.objects.bulk_update_or_create(
+            [new_obj], update_choice=['pair_part1', 'pair_part2'])
+
+        uniques = UniqueTogetherAndField.objects.all()
+        self.assertEquals(len(uniques), 1)
+        self.assertEquals(uniques[0].text, 'updated text')
+
+    def test_insert_unique_together_more_than_one_no_argument(self):
+        # should fail, unless specified as an argument
+        data = {
+            'unique_integer': 1,
+            'text': 'original text',
+            'pair_part1': 1,
+            'pair_part2': 1
+        }
+        UniqueTogetherAndField.objects.create(**data)
+
+        new_obj = UniqueTogetherAndField(**data)
+        new_obj.text = 'updated text'
+
+        with self.assertRaises(TypeError):
+            UniqueTogetherAndField.objects.bulk_update_or_create([new_obj])
+
+
+class BulkUpdateTests(TestCase, BulkAndCreateCommon):
+
+    def setUp(self):
+        self.now = timezone.now().replace(microsecond=0)  # mysql doesn't do microseconds. # NOQA
+        self.date = date(2015, 3, 28)
+        self.time = time(13, 0)
+        create_fixtures()
+
+    def _test_field(self, field, idx_to_value_function):
+        '''
+        Helper to do repeative simple tests on one field.
+        '''
+
+        # set
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            value = idx_to_value_function(idx)
+            setattr(person, field, value)
+
+        # update
+        Person.objects.bulk_update(people, update_fields=[field])
+
+        # check
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            saved_value = getattr(person, field)
+            expected_value = idx_to_value_function(idx)
+            self.assertEqual(saved_value, expected_value)
 
     def test_custom_fields(self):
         values = {}

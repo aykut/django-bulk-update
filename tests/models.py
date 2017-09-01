@@ -40,8 +40,8 @@ class Person(models.Model):
 
     remote_addr = models.GenericIPAddressField(null=True, blank=True)
 
-    my_file = models.FileField(upload_to='/some/path/', null=True, blank=True)
-    image = models.ImageField(upload_to='/some/path/', null=True, blank=True)
+    my_file = models.FileField(upload_to='some/path/', null=True, blank=True)
+    image = models.ImageField(upload_to='some/path/', null=True, blank=True)
 
     data = JSONField(null=True, blank=True)
 
@@ -52,6 +52,36 @@ class Person(models.Model):
         'Company', blank=True, related_name='workers')
 
     objects = BulkUpdateManager()
+
+
+class Unique(models.Model):
+    unique_integer = models.IntegerField(unique=True)
+    text = models.CharField(max_length=50)
+
+    objects = BulkUpdateManager()
+
+
+class UniqueTogetherAndField(models.Model):
+    unique_integer = models.IntegerField(unique=True)
+    text = models.CharField(max_length=50)
+    pair_part1 = models.IntegerField()
+    pair_part2 = models.IntegerField()
+
+    objects = BulkUpdateManager()
+
+    class Meta:
+        unique_together = ('pair_part1', 'pair_part2')
+
+
+class UniqueTogether(models.Model):
+    text = models.CharField(max_length=50)
+    pair_part1 = models.IntegerField()
+    pair_part2 = models.IntegerField()
+
+    objects = BulkUpdateManager()
+
+    class Meta:
+        unique_together = ('pair_part1', 'pair_part2')
 
 
 class Company(models.Model):
