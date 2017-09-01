@@ -9,6 +9,7 @@ from collections import defaultdict
 from django.db import connections, models
 from django.db.models.query import QuerySet
 from django.db.models.sql import UpdateQuery
+from django.db.models.sql import InsertQuery
 
 
 def _get_db_type(field, connection):
@@ -109,8 +110,175 @@ def get_fields(update_fields, exclude_fields, meta, obj=None):
             )
         )
     ]
-
     return fields
+
+
+def get_unique_field_names(meta, update_choice):
+    unique_together = meta.unique_together
+
+    if isinstance(unique_together, list):
+        unique_together = tuple(unique_together)
+
+    all_fields = meta.concrete_fields
+    unique_fields = [field.column for field in all_fields
+                     if field.unique is True and field.primary_key is not True]
+
+    uniques = unique_together + tuple(unique_fields)
+
+    if update_choice is not None and tuple(update_choice) in uniques:
+        uniques = tuple(update_choice),
+
+    if len(uniques) > 1:
+        raise TypeError('No choice of which Index to use in potential update')
+    elif len(uniques) == 0:
+        # TODO don't assume that id is primary_key
+        uniques = (('id'),)
+
+    uniques = uniques[0]
+    all_fields = meta.concrete_fields
+    unique_columns = []
+
+    for field in all_fields:
+        if field.name in uniques:
+            unique_columns.append(field.column)
+
+    return unique_columns
+
+
+def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=None,
+                          using='default', batch_size=None, pk_field='pk', update_choice=None):
+    assert batch_size is None or batch_size > 0
+
+    # force to retrieve objs from the DB at the beginning,
+    # to avoid multiple subsequent queries
+    objs = list(objs)
+    if not objs:
+        return
+    batch_size = batch_size or len(objs)
+
+    if meta:
+        fields = get_fields(update_fields, exclude_fields, meta)
+    else:
+        meta = objs[0]._meta
+        if update_fields is not None:
+            fields = get_fields(update_fields, exclude_fields, meta, objs[0])
+        else:
+            # TODO resolve the discussion on issue #63
+            # You can't get the fields indvidually as that has
+            # to be coded into the sql statement
+            fields = get_fields(update_fields, exclude_fields, meta, objs[0])
+
+    if fields is not None:
+        fields = get_fields(update_fields, exclude_fields, meta, objs[0])
+    else:
+        fields = None
+
+    if fields is not None and len(fields) == 0:
+        return
+
+    if pk_field == 'pk':
+        pk_field = meta.get_field(meta.pk.name)
+    else:
+        pk_field = meta.get_field(pk_field)
+
+    connection = connections[using]
+    query = InsertQuery(meta.model)
+    compiler = query.get_compiler(connection=connection)
+    vendor = connection.vendor
+
+    unique_column_names = get_unique_field_names(meta, update_choice)
+
+    if vendor != 'postgresql':
+        raise NotImplementedError('Only postgresql supported atm.')
+
+    updated_no = 0
+    inserted_no = 0
+    for objs_batch in grouper(objs, batch_size):
+        parameters = []
+        pks = []
+
+        for obj in objs_batch:
+            pk_value, _ = _as_sql(obj, pk_field, query, compiler, connection)
+            if pk_value is not None:
+                pks.append(pk_value)
+
+        _model = meta.concrete_model
+        objs_for_update = _model.objects.filter(pk__in=pks)
+        updated_pks = {obj.pk for obj in objs_for_update}
+        update_objs_has_values = [obj for obj in objs_batch if obj.pk in updated_pks]
+
+        updated_no += len(updated_pks)
+        bulk_update(update_objs_has_values,
+                    meta=meta,
+                    update_fields=update_fields,
+                    exclude_fields=exclude_fields,
+                    batch_size=batch_size)
+
+        objs_to_insert = [obj for obj in objs_batch if obj.pk not in updated_pks]
+        if len(objs_to_insert) == 0:
+            # no inserts needed
+            continue
+
+        for obj in objs_to_insert:
+            object_row = []
+            for field in meta.concrete_fields:
+                if field.column == 'id':
+                    # TODO don't assume that id is primary_key
+                    if field.db_type(connection) == 'serial':
+                        # for the insert we want to make sure we have a new pk field.
+                        object_row.append('DEFAULT')
+                    else:
+                        # assuming that it will an uuid function
+                        object_row.append(field.default())
+                    continue
+
+                value, _ = _as_sql(obj, field, query, compiler, connection)
+
+                if value is None:
+                    value = 'NULL'
+                object_row.append(value)
+            parameters.append(tuple(object_row))
+
+        # new templates
+        unique_columns = ', '.join(['"{}"'.format(field) for field in unique_column_names])
+
+        dbtable = '"{}"'.format(meta.db_table)
+        excluded = '"{field}"=EXCLUDED.{field}'
+        unique_templ = '{dbtable}.' + excluded
+        unique_constraint = ' AND '.join([unique_templ.format(field=field, dbtable=meta.db_table)
+                                          for field in unique_column_names])
+        update_fields = ', '.join([excluded.format(field=field.column)
+                                  for field in fields])
+
+        def format_for_sql(tup):
+            params = ', '.join(["'{}'".format(p) for p in tup])
+            return '({})'.format(params)
+
+        values = ', '.join([format_for_sql(p) for p in parameters])
+        # default should be treated as a keyword, not a string
+        values = values.replace("'DEFAULT'", 'DEFAULT')
+        values = values.replace("'NULL'", 'NULL')
+        all_fields = ', '.join(['"{}"'.format(field.column) for field in meta.concrete_fields])
+
+        sql_insert = '''
+            INSERT INTO {dbtable} ({all_fields}) VALUES {all_values}
+            ON CONFLICT ({unique_fields}) DO UPDATE
+            SET {update_fields} -- need to fix excluded
+            WHERE {unique_constraint}
+        '''.format(
+            dbtable=dbtable,
+            all_fields=all_fields,
+            all_values=values,
+            unique_fields=unique_columns,
+            update_fields=update_fields,
+            unique_constraint=unique_constraint
+        )
+
+        del values
+        inserted_no += len(objs_to_insert)
+        connection.cursor().execute(sql_insert, parameters)
+
+    return updated_no, inserted_no
 
 
 def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
