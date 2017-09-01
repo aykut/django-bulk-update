@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from django_bulk_update import helper
 
-from .models import Person, Role, PersonUUID, Brand
+from .models import Person, Role, PersonUUID, Brand, Unique, UniqueTogether, UniqueTogetherAndField
 from .fixtures import create_fixtures
 
 
@@ -288,6 +288,145 @@ class BulkUpdateCreateTests(TestCase, BulkAndCreateCommon):
         fn = lambda idx: IMGS[idx % 5]
 
         self._test_field_insert('my_file',  fn)
+
+    def test_custom_fields(self):
+        Person.objects.all().delete() # removing fixtures
+        people = create_fixtures(create=False)
+
+        values = {}
+        people_dict = {p.name: p for p in people}
+
+        person = people_dict['Mike']
+        person.data = {'name': 'mikey', 'age': 99, 'ex': -99}
+        values[person.name] = {'name': 'mikey', 'age': 99, 'ex': -99}
+
+        person = people_dict['Mary']
+        person.data = {'names': {'name': []}}
+        values[person.name] = {'names': {'name': []}}
+
+        person = people_dict['Pete']
+        person.data = []
+        values[person.name] = []
+
+        person = people_dict['Sandra']
+        person.data = [{'name': 'Pete'}, {'name': 'Mike'}]
+        values[person.name] = [{'name': 'Pete'}, {'name': 'Mike'}]
+
+        person = people_dict['Ash']
+        person.data = {'text': 'bla'}
+        values[person.name] = {'text': 'bla'}
+
+        person = people_dict['Crystal']
+        values[person.name] = person.data
+
+        Person.objects.bulk_update_or_create(people)
+
+        people = Person.objects.all()
+        for person in people:
+            self.assertEqual(person.data, values[person.name])
+
+    def test_insert_foreign_key_fields(self):
+        pass
+
+    def test_insert_foreign_key_fields_explicit(self):
+        # with update field
+        pass
+
+    def test_insert_foreign_key_fields_with_id_suffix(self):
+        pass
+
+    def test_exclude_fields_does_not_affect_insert(self):
+        pass
+
+    def test_batch_size(self):
+        '''update or create should return tuple, updated and created'''
+        people = Person.objects.order_by('pk').all()
+        for idx, person in enumerate(people):
+            person.age += 1
+            person.height += Decimal('0.01')
+
+        person = create_fixtures(1, create=False)
+        people = list(people) + person
+
+        updated, inserted = Person.objects.bulk_update_or_create(people, batch_size=1)
+        self.assertEqual(updated, 6)
+        self.assertEqual(inserted, 1)
+
+        people2 = Person.objects.order_by('pk').all()
+        for person1, person2 in zip(people, people2):
+            self.assertEqual(person1.age, person2.age)
+            self.assertEqual(person1.height, person2.height)
+
+    def test_array_field(self):
+        pass
+
+    def test_uuid_pk_with_insert(self):
+        pass
+
+    def test_insert_with_unique_together_updating(self):
+        data = {
+            'text': 'original text',
+            'pair_part1': 1,
+            'pair_part2': 1
+        }
+
+        UniqueTogether.objects.create(**data)
+
+        new_obj = UniqueTogether(**data)
+        new_obj.text = 'updated text'
+
+        UniqueTogether.objects.bulk_update_or_create([new_obj])
+
+        uniques = UniqueTogether.objects.all()
+        self.assertEquals(len(uniques), 1)
+        self.assertEquals(uniques[0].text, 'updated text')
+
+    def test_insert_with_single_unique(self):
+        Unique.objects.create(unique_integer=1, text='original text')
+
+        new_obj = Unique(unique_integer=1, text='updated text')
+
+        Unique.objects.bulk_update_or_create([new_obj])
+
+        uniques = Unique.objects.all()
+        self.assertEquals(len(uniques), 1)
+        self.assertEquals(uniques[0].text, 'updated text')
+
+    def test_insert_unique_together_more_than_one_with_argument(self):
+        # should fail, unless specified as an argument
+        data = {
+            'unique_integer': 1,
+            'text': 'original text',
+            'pair_part1': 1,
+            'pair_part2': 1
+        }
+        UniqueTogetherAndField.objects.create(**data)
+
+        new_obj = UniqueTogetherAndField(**data)
+        new_obj.text = 'updated text'
+
+        UniqueTogetherAndField.objects.bulk_update_or_create(
+            [new_obj], update_choice=['pair_part1', 'pair_part2'])
+
+        uniques = UniqueTogetherAndField.objects.all()
+        self.assertEquals(len(uniques), 1)
+        self.assertEquals(uniques[0].text, 'updated text')
+
+    def test_insert_unique_together_more_than_one_no_argument(self):
+        # should fail, unless specified as an argument
+        data = {
+            'unique_integer': 1,
+            'text': 'original text',
+            'pair_part1': 1,
+            'pair_part2': 1
+        }
+        UniqueTogetherAndField.objects.create(**data)
+
+        new_obj = UniqueTogetherAndField(**data)
+        new_obj.text = 'updated text'
+
+        with self.assertRaises(TypeError):
+            UniqueTogetherAndField.objects.bulk_update_or_create([new_obj])
 
 
 class BulkUpdateTests(TestCase, BulkAndCreateCommon):
