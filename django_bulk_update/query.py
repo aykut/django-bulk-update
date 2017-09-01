@@ -16,7 +16,7 @@ class BulkUpdateQuerySet(models.QuerySet):
             batch_size=batch_size)
 
     def bulk_update_or_create(self, objs, update_fields=None,
-                              exclude_fields=None, batch_size=None):
+                              exclude_fields=None, batch_size=None, update_choice=None):
 
         self._for_write = True
         using = self.db
@@ -24,5 +24,5 @@ class BulkUpdateQuerySet(models.QuerySet):
         return bulk_update_or_create(
             objs, update_fields=update_fields,
             exclude_fields=exclude_fields, using=using,
-            batch_size=batch_size
+            batch_size=batch_size, update_choice=update_choice
         )

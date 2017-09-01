@@ -113,24 +113,40 @@ def get_fields(update_fields, exclude_fields, meta, obj=None):
     return fields
 
 
-def get_unique_together(meta):
+def get_unique_field_names(meta, update_choice):
     unique_together = meta.unique_together
-    if len(unique_together) > 1:
-        raise NotImplementedError('Only one unique together supported')
-    elif len(unique_together) == 0:
+
+    if isinstance(unique_together, list):
+        unique_together = tuple(unique_together)
+
+    all_fields = meta.concrete_fields
+    unique_fields = [field.column for field in all_fields
+                     if field.unique is True and field.primary_key is not True]
+
+    uniques = unique_together + tuple(unique_fields)
+
+    if update_choice is not None and tuple(update_choice) in uniques:
+        uniques = tuple(update_choice),
+
+    if len(uniques) > 1:
+        raise TypeError('No choice of which Index to use in potential update')
+    elif len(uniques) == 0:
         # TODO don't assume that id is primary_key
-        unique_together = (('id'),)
-    uniques = unique_together[0]
-    all_fields = meta.fields
+        uniques = (('id'),)
+
+    uniques = uniques[0]
+    all_fields = meta.concrete_fields
     unique_columns = []
+
     for field in all_fields:
         if field.name in uniques:
             unique_columns.append(field.column)
+
     return unique_columns
 
 
 def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=None,
-                          using='default', batch_size=None, pk_field='pk'):
+                          using='default', batch_size=None, pk_field='pk', update_choice=None):
     assert batch_size is None or batch_size > 0
 
     # force to retrieve objs from the DB at the beginning,
@@ -147,7 +163,10 @@ def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=No
         if update_fields is not None:
             fields = get_fields(update_fields, exclude_fields, meta, objs[0])
         else:
-            fields = None
+            # TODO resolve the discussion on issue #63
+            # You can't get the fields indvidually as that has
+            # to be coded into the sql statement
+            fields = get_fields(update_fields, exclude_fields, meta, objs[0])
 
     if fields is not None:
         fields = get_fields(update_fields, exclude_fields, meta, objs[0])
@@ -167,11 +186,13 @@ def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=No
     compiler = query.get_compiler(connection=connection)
     vendor = connection.vendor
 
-    unique_column_names = get_unique_together(meta)
+    unique_column_names = get_unique_field_names(meta, update_choice)
 
     if vendor != 'postgresql':
         raise NotImplementedError('Only postgresql supported atm.')
 
+    updated_no = 0
+    inserted_no = 0
     for objs_batch in grouper(objs, batch_size):
         parameters = []
         pks = []
@@ -186,6 +207,7 @@ def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=No
         updated_pks = {obj.pk for obj in objs_for_update}
         update_objs_has_values = [obj for obj in objs_batch if obj.pk in updated_pks]
 
+        updated_no += len(updated_pks)
         bulk_update(update_objs_has_values,
                     meta=meta,
                     update_fields=update_fields,
@@ -195,7 +217,7 @@ def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=No
         objs_to_insert = [obj for obj in objs_batch if obj.pk not in updated_pks]
         if len(objs_to_insert) == 0:
             # no inserts needed
-            return
+            continue
 
         for obj in objs_to_insert:
             object_row = []
@@ -253,9 +275,10 @@ def bulk_update_or_create(objs, meta=None, update_fields=None, exclude_fields=No
         )
 
         del values
+        inserted_no += len(objs_to_insert)
+        connection.cursor().execute(sql_insert, parameters)
 
-        with connection.cursor() as cursor:
-            cursor.execute(sql_insert)
+    return updated_no, inserted_no
 
 
 def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
