@@ -4,6 +4,9 @@ python:
   - 3.5
   - 2.7
 
+addons:
+  postgresql: "9.5"
+
 env:
   matrix:
     - DJANGO=1.10 DATABASE_URL='sqlite://localhost/:memory:'
