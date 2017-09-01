@@ -54,6 +54,36 @@ class Person(models.Model):
     objects = BulkUpdateManager()
 
 
+class Unique(models.Model):
+    unique_integer = models.IntegerField(unique=True)
+    text = models.CharField(max_length=50)
+
+    objects = BulkUpdateManager()
+
+
+class UniqueTogetherAndField(models.Model):
+    unique_integer = models.IntegerField(unique=True)
+    text = models.CharField(max_length=50)
+    pair_part1 = models.IntegerField()
+    pair_part2 = models.IntegerField()
+
+    objects = BulkUpdateManager()
+
+    class Meta:
+        unique_together = ('pair_part1', 'pair_part2')
+
+
+class UniqueTogether(models.Model):
+    text = models.CharField(max_length=50)
+    pair_part1 = models.IntegerField()
+    pair_part2 = models.IntegerField()
+
+    objects = BulkUpdateManager()
+
+    class Meta:
+        unique_together = ('pair_part1', 'pair_part2')
+
+
 class Company(models.Model):
     name = models.CharField(max_length=50)
     president = models.ForeignKey(Person, related_name='companies')
