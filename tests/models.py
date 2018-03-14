@@ -16,7 +16,7 @@ class Person(models.Model):
     """
     role = models.ForeignKey(Role, null=True, on_delete=models.CASCADE)
     big_age = models.BigIntegerField()
-    comma_separated_age = models.CommaSeparatedIntegerField(max_length=255)
+    #comma_separated_age = models.CommaSeparatedIntegerField(max_length=255)
     age = models.IntegerField()
     positive_age = models.PositiveIntegerField()
     positive_small_age = models.PositiveSmallIntegerField()
