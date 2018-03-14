@@ -695,7 +695,7 @@ class NumQueriesTest(TestCase):
 
 class GetFieldsTests(TestCase):
 
-    total_fields = 25
+    total_fields = 24
 
     def setUp(self):
         create_fixtures()
