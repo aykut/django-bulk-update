@@ -3,15 +3,15 @@ language: python
 python:
   - 3.5
 
-matrix:
-  env:
-    - DJANGO=1.11 DATABASE_URL='sqlite://localhost/:memory:'
-    - DJANGO=1.11 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
-    - DJANGO=1.11 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
-    - DJANGO=2.0 DATABASE_URL='sqlite://localhost/:memory:'
-    - DJANGO=2.0 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
-    - DJANGO=2.0 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+env:
+  - DJANGO=1.11 DATABASE_URL='sqlite://localhost/:memory:'
+  - DJANGO=1.11 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+  - DJANGO=1.11 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+  - DJANGO=2.0 DATABASE_URL='sqlite://localhost/:memory:'
+  - DJANGO=2.0 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+  - DJANGO=2.0 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
 
+matrix:
   include:
     - python: 2.7
       env: DJANGO=1.11 DATABASE_URL='sqlite://localhost/:memory:'
