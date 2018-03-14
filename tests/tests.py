@@ -48,10 +48,6 @@ class BulkUpdateTests(TestCase):
                       'positive_small_age', 'small_age'):
             self._test_field(field,  fn)
 
-    def test_comma_separated_integer_field(self):
-        fn = lambda idx: str(idx) + ',27'
-        self._test_field('comma_separated_age',  fn)
-
     def test_boolean_field(self):
         fn = lambda idx: [True, False][idx % 2]
         self._test_field('certified',  fn)
