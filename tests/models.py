@@ -14,7 +14,7 @@ class Person(models.Model):
     """
         test model
     """
-    role = models.ForeignKey(Role, null=True)
+    role = models.ForeignKey(Role, null=True, on_delete=models.CASCADE)
     big_age = models.BigIntegerField()
     comma_separated_age = models.CommaSeparatedIntegerField(max_length=255)
     age = models.IntegerField()
@@ -56,7 +56,7 @@ class Person(models.Model):
 
 class Company(models.Model):
     name = models.CharField(max_length=50)
-    president = models.ForeignKey(Person, related_name='companies')
+    president = models.ForeignKey(Person, related_name='companies', on_delete=models.CASCADE)
 
 
 class PersonUUID(models.Model):
