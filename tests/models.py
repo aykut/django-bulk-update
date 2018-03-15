@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from jsonfield import JSONField
@@ -68,6 +69,7 @@ class PersonUUID(models.Model):
 
 class Brand(models.Model):
     name = models.CharField(max_length=128, unique=True, db_index=True)
-    codes = ArrayField(models.CharField(max_length=64), default=['code_1'])
+    if settings.DATABASES['default']['USER'] == 'postgres':
+        codes = ArrayField(models.CharField(max_length=64), default=['code_1'])
 
     objects = BulkUpdateManager()
