@@ -17,7 +17,7 @@ def get_fixtures(n=None):
     _time = time(13, 0)
     fixtures = [
         {
-            'big_age': 59999999999999999, 'comma_separated_age': '1,2,3',
+            'big_age': 59999999999999999, 
             'age': -99, 'positive_age': 9999, 'positive_small_age': 299,
             'small_age': -299, 'certified': False, 'null_certified': None,
             'name': 'Mike', 'email': 'miketakeahike@mailinator.com',
@@ -30,7 +30,7 @@ def get_fixtures(n=None):
             'image': 'kitten.jpg', 'data': {'name': 'Mike', 'age': -99},
         },
         {
-            'big_age': 245999992349999, 'comma_separated_age': '6,2,9',
+            'big_age': 245999992349999, 
             'age': 25, 'positive_age': 49999, 'positive_small_age': 315,
             'small_age': 5409, 'certified': False, 'null_certified': True,
             'name': 'Pete', 'email': 'petekweetookniet@mailinator.com',
@@ -42,7 +42,7 @@ def get_fixtures(n=None):
             'data': [{'name': 'Pete'}, {'name': 'Mike'}],
         },
         {
-            'big_age': 9929992349999, 'comma_separated_age': '6,2,9,10,5',
+            'big_age': 9929992349999,
             'age': 29, 'positive_age': 412399, 'positive_small_age': 23315,
             'small_age': -5409, 'certified': False, 'null_certified': True,
             'name': 'Ash', 'email': 'rashash@mailinator.com',
@@ -54,7 +54,7 @@ def get_fixtures(n=None):
             'data': {'text': 'bla bla bla', 'names': ['Mike', 'Pete']},
         },
         {
-            'big_age': 9992349234, 'comma_separated_age': '12,29,10,5',
+            'big_age': 9992349234,
             'age': -29, 'positive_age': 4199, 'positive_small_age': 115,
             'small_age': 909, 'certified': True, 'null_certified': False,
             'name': 'Mary', 'email': 'marykrismas@mailinator.com',
@@ -66,7 +66,7 @@ def get_fixtures(n=None):
             'data': {'names': {'name': 'Mary'}},
         },
         {
-            'big_age': 999234, 'comma_separated_age': '12,1,30,50',
+            'big_age': 999234,
             'age': 1, 'positive_age': 99199, 'positive_small_age': 5,
             'small_age': -909, 'certified': False, 'null_certified': False,
             'name': 'Sandra', 'email': 'sandrasalamandr@mailinator.com',
@@ -77,7 +77,7 @@ def get_fixtures(n=None):
             'image': 'dummy.jpeg', 'data': {},
         },
         {
-            'big_age': 9999999999, 'comma_separated_age': '1,100,3,5',
+            'big_age': 9999999999, 
             'age': 35, 'positive_age': 1111, 'positive_small_age': 500,
             'small_age': 110, 'certified': True, 'null_certified': None,
             'name': 'Crystal', 'email': 'crystalpalace@mailinator.com',

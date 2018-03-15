@@ -14,9 +14,9 @@ class Person(models.Model):
     """
         test model
     """
-    role = models.ForeignKey(Role, null=True)
+    role = models.ForeignKey(Role, null=True, on_delete=models.CASCADE)
     big_age = models.BigIntegerField()
-    comma_separated_age = models.CommaSeparatedIntegerField(max_length=255)
+    #comma_separated_age = models.CommaSeparatedIntegerField(max_length=255)
     age = models.IntegerField()
     positive_age = models.PositiveIntegerField()
     positive_small_age = models.PositiveSmallIntegerField()
@@ -40,8 +40,8 @@ class Person(models.Model):
 
     remote_addr = models.GenericIPAddressField(null=True, blank=True)
 
-    my_file = models.FileField(upload_to='/some/path/', null=True, blank=True)
-    image = models.ImageField(upload_to='/some/path/', null=True, blank=True)
+    my_file = models.FileField(upload_to='some/path/', null=True, blank=True)
+    image = models.ImageField(upload_to='some/path/', null=True, blank=True)
 
     data = JSONField(null=True, blank=True)
 
@@ -56,7 +56,7 @@ class Person(models.Model):
 
 class Company(models.Model):
     name = models.CharField(max_length=50)
-    president = models.ForeignKey(Person, related_name='companies')
+    president = models.ForeignKey(Person, related_name='companies', on_delete=models.CASCADE)
 
 
 class PersonUUID(models.Model):

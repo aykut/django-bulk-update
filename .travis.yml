@@ -2,20 +2,25 @@ language: python
 
 python:
   - 3.5
-  - 2.7
+  - 3.6
 
 env:
-  matrix:
-    - DJANGO=1.10 DATABASE_URL='sqlite://localhost/:memory:'
-    - DJANGO=1.10 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
-    - DJANGO=1.10 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
-    - DJANGO=1.9 DATABASE_URL='sqlite://localhost/:memory:'
-    - DJANGO=1.9 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
-    - DJANGO=1.9 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
-    - DJANGO=1.8 DATABASE_URL='sqlite://localhost/:memory:'
-    - DJANGO=1.8 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
-    - DJANGO=1.8 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+  - DJANGO=1.11 DATABASE_URL='sqlite://localhost/:memory:'
+  - DJANGO=1.11 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+  - DJANGO=1.11 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+  - DJANGO=2.0 DATABASE_URL='sqlite://localhost/:memory:'
+  - DJANGO=2.0 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+  - DJANGO=2.0 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
 
+matrix:
+  include:
+    - python: 2.7
+      env: DJANGO=1.11 DATABASE_URL='sqlite://localhost/:memory:'
+    - python: 2.7
+      env: DJANGO=1.11 DATABASE_URL='mysql://root@127.0.0.1/django_bulk_update_test'
+    - python: 2.7
+      env: DJANGO=1.11 DATABASE_URL='postgres://postgres@127.0.0.1/django_bulk_update_test'
+  
 before_script:
   - sh -c "if [ '$DATABASE_URL' = 'postgres://postgres@127.0.0.1/django_bulk_update_test' ];
     then psql -c 'DROP DATABASE IF EXISTS django_bulk_update_test;' -U postgres; fi"
