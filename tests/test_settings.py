@@ -10,16 +10,7 @@ db_url = os.environ.get("DATABASE_URL", "sqlite://localhost/:memory:")
 DB = dj_database_url.parse(db_url)
 
 DATABASES = {
-    # 'default': DB,
-
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'default',
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
-    }
+    'default': DB,
 }
 
 INSTALLED_APPS = ('django_bulk_update', 'tests',)

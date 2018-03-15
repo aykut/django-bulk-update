@@ -1,7 +1,10 @@
-from datetime import date, time, timedelta
-from decimal import Decimal
 import random
 
+from datetime import date, time, timedelta
+from decimal import Decimal
+from unittest import skipUnless
+
+from django.conf import settings
 from django.db.models import F, Func, Value
 from django.db.models.functions import Concat
 from django.test import TestCase
@@ -370,6 +373,8 @@ class BulkUpdateTests(TestCase):
             self.assertEqual(person1.age, person2.age)
             self.assertEqual(person1.height, person2.height)
 
+    @skipUnless(settings.DATABASES['default']['USER'] == 'postgres',
+                "ArrayField's are only available in PostgreSQL.")
     def test_array_field(self):
         """
         Test to 'bulk_update' a postgresql's ArrayField.
