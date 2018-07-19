@@ -1,5 +1,4 @@
-import random
-
+import collections
 from datetime import date, time, timedelta
 from decimal import Decimal
 from unittest import skipUnless
@@ -7,6 +6,8 @@ from unittest import skipUnless
 from django.conf import settings
 from django.db.models import F, Func, Value
 from django.db.models.functions import Concat
+from django.db.models.signals import pre_save, post_save
+from django.dispatch import receiver
 from django.test import TestCase
 from django.utils import timezone
 
@@ -888,3 +889,32 @@ class GetFieldsTests(TestCase):
         exclude_fields = ['jobs']
         self.assertRaises(TypeError, helper.get_fields,
                           update_fields, exclude_fields, meta)
+
+    def test_signals(self):
+        signal_calls = collections.defaultdict(int)
+
+        @receiver(pre_save)
+        def pre_save_handler(sender, instance, raw, using, update_fields, **kwargs):
+            self.assertIs(sender, Person)
+            self.assertIsInstance(instance, Person)
+            self.assertFalse(raw)
+            self.assertEquals(using, 'default')
+            self.assertListEqual(update_fields, ['age'])
+            signal_calls['pre_save'] += 1
+
+        @receiver(post_save)
+        def post_save_handler(sender, instance, created, raw, using, update_fields, **kwargs):
+            self.assertIs(sender, Person)
+            self.assertIsInstance(instance, Person)
+            self.assertFalse(created)
+            self.assertFalse(raw)
+            self.assertEquals(using, 'default')
+            self.assertListEqual(update_fields, ['age'])
+            signal_calls['post_save'] += 1
+
+        people = Person.objects.all()
+        Person.objects.bulk_update(people, update_fields=['age'])
+
+        self.assertGreater(len(people), 0)
+        self.assertEquals(signal_calls['pre_save'], len(people))
+        self.assertEquals(signal_calls['post_save'], len(people))
