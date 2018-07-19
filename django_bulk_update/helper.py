@@ -239,7 +239,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
                 sender=obj.__class__,
                 instance=obj,
                 created=False,
-                **signal_kwargs,
+                **signal_kwargs
             )
 
     return lenpks
