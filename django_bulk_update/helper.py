@@ -7,7 +7,7 @@ import itertools
 from collections import defaultdict
 
 from django.db import connections, models
-from django.db.models.query import QuerySet
+from django.db.models.signals import post_save, pre_save
 from django.db.models.sql import UpdateQuery
 
 
@@ -219,6 +219,27 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
 
         lenpks += n_pks
 
+        signal_kwargs = {
+            'raw': False,
+            'using': using,
+            'update_fields': update_fields,
+        }
+
+        for obj in objs_batch:
+            pre_save.send(
+                sender=obj.__class__,
+                instance=obj,
+                **signal_kwargs
+            )
+
         connection.cursor().execute(sql, parameters)
+
+        for obj in objs_batch:
+            post_save.send(
+                sender=obj.__class__,
+                instance=obj,
+                created=False,
+                **signal_kwargs
+            )
 
     return lenpks
