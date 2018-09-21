@@ -156,7 +156,10 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     vendor = connection.vendor
     use_cast = 'mysql' not in vendor and 'sqlite' not in vendor
     if use_cast:
-        template = '"{column}" = CAST(CASE "{pk_column}" {cases}ELSE "{column}" END AS {type})'
+        if 'postgresql' in vendor:
+            template = '"{column}" = CAST(CASE cte."{pk_column}" {cases}ELSE cte."{column}" END AS {type})'
+        else:
+            template = '"{column}" = CAST(CASE "{pk_column}" {cases}ELSE "{column}" END AS {type})'
     else:
         template = '"{column}" = (CASE "{pk_column}" {cases}ELSE "{column}" END)'
 
@@ -191,11 +194,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             for field in parameters.keys()
         )
 
-        parameters = flatten(parameters.values(), types=list)
-        parameters.extend(pks)
-
         n_pks = len(pks)
-        del pks
 
         dbtable = '"{}"'.format(meta.db_table)
 
@@ -204,11 +203,36 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             pks=', '.join(itertools.repeat('%s', n_pks)),
         )
 
-        sql = 'UPDATE {dbtable} SET {values} WHERE {in_clause}'.format(
-            dbtable=dbtable,
-            values=values,
-            in_clause=in_clause,
-        )
+        if 'postgresql' in vendor:
+            columns = ', '.join(f'"{field.column}"' for field in parameters.keys())
+            parameters = list(pks) + flatten(parameters.values(), types=list)
+
+            sql = '''with cte as
+            (
+                select "{pk_column}", {columns}
+                from {dbtable}
+                where {in_clause} order by "{pk_column}" asc
+            )
+            UPDATE {dbtable}
+            SET {values}
+            from cte
+            where cte."{pk_column}" = {dbtable}."{pk_column}"
+            ;'''.format(
+                dbtable=dbtable,
+                values=values,
+                in_clause=in_clause,
+                columns=columns,
+                pk_column=pk_field.column,
+            )
+        else:
+            parameters = flatten(parameters.values(), types=list)
+            parameters.extend(pks)
+            sql = 'UPDATE {dbtable} SET {values} WHERE {in_clause}'.format(
+                dbtable=dbtable,
+                values=values,
+                in_clause=in_clause,
+            )
+        del pks
         del values
 
         # String escaping in ANSI SQL is done by using double quotes (").
