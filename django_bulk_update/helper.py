@@ -207,7 +207,8 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
         )
 
         if ordered:
-            columns = ', '.join(f'"{field.column}"' for field in parameters.keys())
+            columns = ', '.join('"{column}"'.format(column=field.column)
+                                for field in parameters.keys())
             parameters = list(pks) + flatten(parameters.values(), types=list)
 
             sql = '''with cte as
