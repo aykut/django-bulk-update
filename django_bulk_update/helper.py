@@ -114,7 +114,8 @@ def get_fields(update_fields, exclude_fields, meta, obj=None):
 
 
 def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
-                using='default', batch_size=None, pk_field='pk'):
+                using='default', batch_size=None, pk_field='pk',
+                ordered=False):
     assert batch_size is None or batch_size > 0
 
     # force to retrieve objs from the DB at the beginning,
@@ -154,14 +155,16 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
     # Sqlite also gives some trouble with cast, at least for datetime,
     # but is also permissive for uncast values
     vendor = connection.vendor
+
     use_cast = 'mysql' not in vendor and 'sqlite' not in vendor
-    if use_cast:
-        if 'postgresql' in vendor:
-            template = '"{column}" = CAST(CASE cte."{pk_column}" {cases}ELSE cte."{column}" END AS {type})'
-        else:
-            template = '"{column}" = CAST(CASE "{pk_column}" {cases}ELSE "{column}" END AS {type})'
+    if ordered:
+        template = 'CASE cte."{pk_column}" {cases}ELSE cte."{column}" END'
     else:
-        template = '"{column}" = (CASE "{pk_column}" {cases}ELSE "{column}" END)'
+        template = 'CASE "{pk_column}" {cases}ELSE "{column}" END'
+    if use_cast:
+        template = '"{column}" = CAST(' + template + ' AS {type})'
+    else:
+        template = '"{column}" = (' + template + ')'
 
     case_template = "WHEN %s THEN {} "
 
@@ -203,7 +206,7 @@ def bulk_update(objs, meta=None, update_fields=None, exclude_fields=None,
             pks=', '.join(itertools.repeat('%s', n_pks)),
         )
 
-        if 'postgresql' in vendor:
+        if ordered:
             columns = ', '.join(f'"{field.column}"' for field in parameters.keys())
             parameters = list(pks) + flatten(parameters.values(), types=list)
 
