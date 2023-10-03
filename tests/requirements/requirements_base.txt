@@ -1,5 +1,5 @@
 dj_database_url==0.4.2
 jsonfield==2.0.1
-pillow==4.1.1
+pillow==10.0.1
 psycopg2==2.7.3
 six==1.10.0
